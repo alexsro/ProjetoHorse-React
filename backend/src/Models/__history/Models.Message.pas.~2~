@@ -1,0 +1,21 @@
+unit Models.Message;
+
+interface
+
+uses Enum.Message.Types;
+
+type
+  TMessage = class
+  private
+    FTipo: TTypesMessage;
+    FTexto: String;
+    FTitulo: String;
+  public
+    property Tipo: TTypesMessage read FTipo write FTipo;
+    property Texto: String read FTexto write FTexto;
+    property Titulo: String read FTitulo write FTitulo;
+  end;
+
+implementation
+
+end.

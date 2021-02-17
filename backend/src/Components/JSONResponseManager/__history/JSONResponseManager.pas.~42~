@@ -1,0 +1,388 @@
+unit JSONResponseManager;
+
+interface
+
+uses
+  JSONResponseManager.Interf, System.JSON, Horse, System.SysUtils,
+  System.StrUtils, Data.DB, System.Diagnostics, System.TimeSpan,
+  DataSet.Serialize, System.Math, System.Generics.Collections;
+
+
+type
+  IJSONResponseManager = JSONResponseManager.Interf.IJSONResponseManager;
+  TJSONType = JSONResponseManager.Interf.TJSONType;
+
+  TJSONResponseManager = class(TInterfacedObject, IJSONResponseManager)
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+    FReq: THorseRequest;
+    FRes: THorseResponse;
+    FOwnerData: boolean;
+    FData: TJSONValue;
+    FDataCalculated: TJSONValue;
+    FFuncData: TFunc<TList<TJSONObject>>;
+    FJSONType: TJSONType;
+    FFuncRecords: TFunc<Integer>;
+    FRequestPaged: boolean;
+    FRecords: integer;
+    FLimit: integer;
+    FRequesTimes: boolean;
+    FTimeData: string;
+    FTimeRecords: string;
+    FTimeJSON: string;
+    FRequestRecords: boolean;
+    function SetData(const Value: TJSONValue): IJSONResponseManager; overload;
+    function SetData(const Func: TFunc<TList<TJSONObject>>; const JSONType: TJSONType): IJSONResponseManager; overload;
+    function SetRecords(const Func: TFunc<Integer>): IJSONResponseManager;
+    function GetJSON: TJSONValue;
+    procedure Send;
+
+    procedure FreeData;
+
+    function GetFullJSONWithoutTime: TJSONValue;
+    procedure GetDataByFuncData;
+    function GetFullJSONWithtime: TJSONValue;
+    procedure GetDataAndCalculateTime;
+    function FormatTimeElapsed(const Time: TTimeSpan): string;
+    procedure AddTimeData;
+    procedure GetRecordsAndCalculateTime;
+    procedure GetRecordsByFuncRecords;
+    procedure AddTimeRecords;
+    procedure AddTimeJSON;
+    function GetPagedJSONWithoutTime: TJSONValue;
+    procedure AddRecords;
+    procedure AddLimit;
+    function GetPagedJSONWithTime: TJSONValue;
+  public
+    { public declarations }
+    constructor Create(const Req: THorseRequest; const Res: THorseResponse; OnwerData: boolean = false);
+    destructor Destroy; override;
+
+    class function New(const Req: THorseRequest; const Res: THorseResponse; OnwerData: boolean = false): IJSONResponseManager;
+  end;
+
+implementation
+
+{ TJSONResponseManager }
+
+class function TJSONResponseManager.New(const Req: THorseRequest; const Res: THorseResponse; OnwerData: boolean)
+  : IJSONResponseManager;
+begin
+  Result := TJSONResponseManager.Create(Req, Res, OnwerData);
+end;
+
+constructor TJSONResponseManager.Create(const Req: THorseRequest; const Res: THorseResponse; OnwerData: boolean = false);
+var
+  LLimit: string;
+  LTimes: string;
+  LRecords: string;
+begin
+  FReq := Req;
+  FRes := Res;
+  FOwnerData := OnwerData;
+  FData := nil;
+  FDataCalculated := nil;
+  FFuncData := nil;
+  FFuncRecords := nil;
+  FRequestPaged := (FReq.Headers['X-Paginate'] = 'true');
+  if not FReq.Query.TryGetValue('limit', LLimit) then
+    LLimit := '25';
+  FLimit := StrToIntDef(LLimit, 25);
+  if not FReq.Query.TryGetValue('times', LTimes) then
+    LTimes := 'false';
+  FRequesTimes := (LTimes = 'true');
+  if not FReq.Query.TryGetValue('records', LRecords) then
+    LRecords := 'false';
+  FRequestRecords := (LRecords = 'true');
+end;
+
+destructor TJSONResponseManager.Destroy;
+begin
+  FReq := nil;
+  FRes := nil;
+  FFuncData := nil;
+  FFuncRecords := nil;
+  if FOwnerData then
+    Self.FreeData;
+  FData := nil;
+  FDataCalculated := nil;
+  inherited;
+end;
+
+procedure TJSONResponseManager.FreeData;
+begin
+  if Assigned(FData) then
+    FData.Free;
+  FData := nil;
+end;
+
+function TJSONResponseManager.SetData(const Value: TJSONValue): IJSONResponseManager;
+begin
+  Result := Self;
+  if Assigned(FData) then
+    FData.Free;
+  FData := Value;
+end;
+
+function TJSONResponseManager.SetData(const Func: TFunc<TList<TJSONObject>>; const JSONType: TJSONType): IJSONResponseManager;
+begin
+  Result := Self;
+  FFuncData := Func;
+  FJSONType := JSONType;
+end;
+
+function TJSONResponseManager.SetRecords(const Func: TFunc<Integer>): IJSONResponseManager;
+begin
+  Result := Self;
+  FFuncRecords := Func;
+end;
+
+function TJSONResponseManager.GetJSON: TJSONValue;
+begin
+  if (not FRequesTimes) and (not FRequestPaged) then
+    Result := Self.GetFullJSONWithoutTime
+  else if (FRequesTimes) and (not FRequestPaged) then
+    Result := Self.GetFullJSONWithTime
+  else if (not FRequesTimes) and (FRequestPaged) then
+    Result := Self.GetPagedJSONWithoutTime
+  else if (FRequesTimes) and (FRequestPaged) then
+    Result := Self.GetPagedJSONWithTime;
+end;
+
+procedure TJSONResponseManager.GetDataByFuncData;
+var
+  OL: TList<TJSONObject>;
+  JA: TJSONArray;
+  JO: TJSONObject;
+  i: integer;
+begin
+  if (not Assigned(FData)) and (Assigned(FFuncData)) then
+  begin
+    OL := FFuncData();
+    case FJSONType of
+      TJSONType.JSONArray:
+      begin
+        JA := TJSONArray.Create;
+        for I := 0 to OL.Count -1 do
+          JA.Add(OL[I]);
+        FData := JA;
+      end;
+      TJSONType.JSONObject:
+      begin
+        JO := TJSONObject.Create;
+        for I := 0 to OL.Count -1 do
+          JO.AddPair(OL[I].Pairs);
+        FData := JO;
+      end;
+    end;
+  end;
+end;
+
+function TJSONResponseManager.GetFullJSONWithoutTime: TJSONValue;
+begin
+  Self.GetDataByFuncData;
+  Result := FData;
+end;
+
+function TJSONResponseManager.GetFullJSONWithtime: TJSONValue;
+begin
+  Self.FreeData;
+  FData := TJSONObject.Create;
+  Self.GetDataAndCalculateTime;
+  Self.AddTimeData;
+  FTimeRecords := '00:00:00.000';
+  Self.AddTimeRecords;
+  Self.AddTimeJSON;
+  if Assigned(FDataCalculated) then
+    TJSONObject(FData).AddPair('data', FDataCalculated)
+  else
+    TJSONObject(FData).AddPair('data', TJSONArray.Create);
+  Result := FData;
+end;
+
+procedure TJSONResponseManager.GetDataAndCalculateTime;
+var
+  SW: TStopWatch;
+  OL: TList<TJSONObject>;
+  JA: TJSONArray;
+  JO: TJSONObject;
+  i: integer;
+begin
+  FDataCalculated := nil;
+  SW := TStopWatch.Create;
+  SW.Start;
+  if Assigned(FFuncData) then
+    OL := FFuncData();
+  SW.Stop;
+  FTimeData := Self.FormatTimeElapsed(SW.Elapsed);
+  SW.Reset;
+  SW.Start;
+  if Assigned(OL) then
+  begin
+    case FJSONType of
+      TJSONType.JSONArray:
+      begin
+        JA := TJSONArray.Create;
+        for I := 0 to OL.Count -1 do
+          JA.Add(OL[I]);
+        FData := JA;
+      end;
+      TJSONType.JSONObject:
+      begin
+        JO := TJSONObject.Create;
+        for I := 0 to OL.Count -1 do
+          JO.AddPair(OL[I].Pairs);
+        FData := JO;
+      end;
+    end;
+  end;
+  SW.Stop;
+  FTimeJSON := Self.FormatTimeElapsed(SW.Elapsed);
+end;
+
+function TJSONResponseManager.FormatTimeElapsed(const Time: TTimeSpan): string;
+begin
+  Result := Format('%s:%s:%s.%s', [
+    Time.Hours.ToString.PadLeft(2, '0'),
+    Time.Minutes.ToString.PadLeft(2, '0'),
+    Time.Seconds.ToString.PadLeft(2, '0'),
+    Time.Milliseconds.ToString.PadLeft(3, '0')
+    ]);
+end;
+
+procedure TJSONResponseManager.AddTimeData;
+var
+  JOBj: TJSONObject;
+begin
+  if FData is TJSONObject then
+  begin
+    JObj := FData as TJSONObject;
+    if Assigned(JObj.GetValue('timeData')) then
+      JObj.RemovePair('timeData').Free;
+    JObj.AddPair('timeData', FTimeData);
+  end;
+end;
+
+procedure TJSONResponseManager.GetRecordsAndCalculateTime;
+var
+  SW: TStopWatch;
+begin
+  FTimeRecords := '00:00:00.000';
+  if FRequestRecords then
+  begin
+    SW := TStopWatch.Create;
+    SW.Start;
+    Self.GetRecordsByFuncRecords;
+    SW.Stop;
+    FTimeRecords := Self.FormatTimeElapsed(SW.Elapsed);
+  end;
+end;
+
+procedure TJSONResponseManager.GetRecordsByFuncRecords;
+begin
+  FRecords := 0;
+  if (Assigned(FFuncRecords)) and (FRequestRecords) then
+    FRecords := FFuncRecords();
+end;
+
+procedure TJSONResponseManager.AddTimeRecords;
+var
+  JOBj: TJSONObject;
+begin
+  if (FData is TJSONObject) and (FRequestRecords) then
+  begin
+    JObj := FData as TJSONObject;
+    if Assigned(JObj.GetValue('timeRecords')) then
+      JObj.RemovePair('timeRecords').Free;
+    JObj.AddPair('timeRecords', FTimeRecords);
+  end;
+end;
+
+procedure TJSONResponseManager.AddTimeJSON;
+var
+  JOBj: TJSONObject;
+begin
+  if FData is TJSONObject then
+  begin
+    JObj := FData as TJSONObject;
+    if Assigned(JObj.GetValue('timeJSON')) then
+      JObj.RemovePair('timeJSON').Free;
+    JObj.AddPair('timeJSON', FTimeJSON);
+  end;
+end;
+
+function TJSONResponseManager.GetPagedJSONWithoutTime: TJSONValue;
+var
+  LData: TJSONValue;
+begin
+
+  if (FData is TJSONObject) and (Assigned(TJSONObject(FData).GetValue('data'))) then
+  begin
+    LData := TJSONObject(FData).RemovePair('data').JsonValue;
+    Self.FreeData;
+  end
+  else
+  begin
+    Self.GetDataByFuncData;
+    LData := FData;
+  end;
+  FData := TJSONObject.Create;
+  Self.GetRecordsByFuncRecords;
+  Self.AddRecords;
+  Self.AddLimit;
+  TJSONObject(FData).AddPair('data', LData);
+  Result := FData;
+end;
+
+procedure TJSONResponseManager.AddRecords;
+var
+  JOBj: TJSONObject;
+begin
+  if (FData is TJSONObject) and (FRequestRecords) then
+  begin
+    JObj := FData as TJSONObject;
+    if Assigned(JObj.GetValue('records')) then
+      JObj.RemovePair('records').Free;
+    JObj.AddPair('records', TJSONNumber.Create(FRecords));
+  end;
+end;
+
+procedure TJSONResponseManager.AddLimit;
+var
+  JOBj: TJSONObject;
+begin
+  if FData is TJSONObject then
+  begin
+    JObj := FData as TJSONObject;
+    if Assigned(JObj.GetValue('limit')) then
+      JObj.RemovePair('limit').Free;
+    JObj.AddPair('limit', TJSONNumber.Create(FLimit));
+  end;
+end;
+
+function TJSONResponseManager.GetPagedJSONWithTime: TJSONValue;
+begin
+  Self.FreeData;
+  FData := TJSONObject.Create;
+  Self.GetDataAndCalculateTime;
+  Self.AddTimeData;
+  Self.GetRecordsAndCalculateTime;
+  Self.AddTimeRecords;
+  Self.AddTimeJSON;
+  Self.AddRecords;
+  Self.AddLimit;
+  if Assigned(FDataCalculated) then
+    TJSONObject(FData).AddPair('data', FDataCalculated)
+  else
+    TJSONObject(FData).AddPair('data', TJSONArray.Create);
+  Result := FData;
+end;
+
+procedure TJSONResponseManager.Send;
+begin
+  FRes.Send(Self.GetJSON);
+end;
+
+end.

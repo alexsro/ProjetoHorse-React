@@ -1,0 +1,102 @@
+unit Validators.BarberShopTypeContact;
+
+interface
+
+uses Models.BarberShopTypeContact, system.SysUtils, Models.Message, system.Generics.Collections;
+
+type
+
+  TValidateBarberShopTypeContact = class
+  private
+    FBarberShopTypeContact: TBarberShopTypeContact;
+    FValidarCRM: TMessage;
+    FValidateName: TMessage;
+    FValidarTamanhoNome: TMessage;
+    function ValidarCRM: TMessage;
+    function ValidarNome: TMessage;
+    function ValidarTamanhoNome: TMessage;
+    procedure setBarberShopTypeConta(const Value: TBarberShopTypeContact);
+  public
+    property Medico: TBarberShopTypeContact write setBarberShopTypeConta;
+    function validar: TObjectList<TMessage>;
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+implementation
+
+uses Enum.Message.Types;
+
+{ TValidateBarberShopTypeContact }
+
+constructor TValidateBarberShopTypeContact.Create;
+begin
+  FValidarCRM := TMessage.Create;
+  FValidateName := TMessage.Create;
+  FValidarTamanhoNome := TMessage.Create;
+end;
+
+destructor TValidateBarberShopTypeContact.Destroy;
+begin
+  FValidarCRM.Free;
+  FValidateName.Free;
+  FValidarTamanhoNome.Free;
+  inherited;
+end;
+
+procedure TValidateBarberShopTypeContact.setBarberShopTypeConta(const Value: TBarberShopTypeContact);
+begin
+  FMedico := Value;
+end;
+
+function TValidateBarberShopTypeContact.validar: TObjectList<TMessage>;
+begin
+  result := TObjectList<TMessage>.Create;
+  if self.ValidarCRM.Tipo <> TMessageTypes.Nenhum then
+    result.Add(FValidarCRM)
+  else if self.ValidarNome.Tipo <> TMessageTypes.Nenhum then
+    result.Add(FValidateName)
+  else if self.ValidarTamanhoNome.Tipo <> TMessageTypes.Nenhum then
+    result.Add(FValidarTamanhoNome);
+end;
+
+function TValidateBarberShopTypeContact.ValidarCRM: TMessage;
+begin
+  if Trim(FMedico.NumeroProfissional) <> '' then
+    FValidarCRM.Tipo := TMessageTypes.Nenhum
+  else
+  begin
+    FValidarCRM.Tipo := TMessageTypes.SimNao;
+    FValidarCRM.texto := 'O campo CRM não foi preenchido, deseja continuar?';
+    FValidarCRM.titulo := 'Validação';
+  end;
+  result := FValidarCRM;
+end;
+
+function TValidateBarberShopTypeContact.ValidarNome: TMessage;
+begin
+  if Trim(FMedico.nome) <> '' then
+    FValidateName.Tipo := TMessageTypes.Nenhum
+  else
+  begin
+    FValidateName.Tipo := TMessageTypes.SimNao;
+    FValidateName.texto := 'O campo NOME não foi preenchido, deseja continuar?';
+    FValidateName.titulo := 'Validação';
+  end;
+  result := FValidateName;
+end;
+
+function TValidateBarberShopTypeContact.ValidarTamanhoNome: TMessage;
+begin
+  if FMedico.nome.Length <= 60 then
+    FValidarTamanhoNome.Tipo := TMessageTypes.Nenhum
+  else
+  begin
+    FValidarTamanhoNome.Tipo := TMessageTypes.Ok;
+    FValidarTamanhoNome.texto := 'O campo NOME deve possuir no máximo 60 caracteres';
+    FValidarTamanhoNome.titulo := 'Erro';
+  end;
+  result := FValidarTamanhoNome;
+end;
+
+end.

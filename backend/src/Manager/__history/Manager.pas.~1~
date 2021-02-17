@@ -1,0 +1,139 @@
+unit Manager;
+
+interface
+
+uses
+  Horse, System.SysUtils, System.Generics.Collections,
+  Models.ConexoesBaseFirebird, System.StrUtils, System.Hash;
+
+type
+  TManager = class
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+    class var FConexoesBaseFirebird: TConexoesBaseFirebird;
+    class var FManagerInstancia: TManager;
+    constructor Create; overload;
+    destructor Destroy; override;
+  public
+    { public declarations }
+    class property ConexoesBaseFirebird: TConexoesBaseFirebird read FConexoesBaseFirebird;
+
+    class destructor UnInitialize;
+
+    class function AddRotas(const RegistrarRotas: TProc): TManager;
+    class function AddMiddlewares(const RegistrarMiddlewares: TProc): TManager;
+
+    class function GetPathServidor: string;
+    class function GetPathTemp: string;
+    class function GetNewTempFolder: string;
+    class function IsDebugging: boolean;
+
+    class function GetInstancia: TManager;
+    class procedure FreeInstancia;
+    class function LiberaDocumentacaoAPI:boolean;
+  end;
+
+implementation
+
+uses
+  System.IOUtils;
+
+{ TManager }
+
+class function TManager.AddMiddlewares(const RegistrarMiddlewares: TProc): TManager;
+begin
+  Result := TManager.GetInstancia;
+  if Assigned(RegistrarMiddlewares) then
+    RegistrarMiddlewares();
+end;
+
+class function TManager.AddRotas(const RegistrarRotas: TProc): TManager;
+begin
+  Result := TManager.GetInstancia;
+  if Assigned(RegistrarRotas) then
+    RegistrarRotas();
+end;
+
+constructor TManager.Create;
+begin
+  if FConexoesBaseFirebird = nil then
+    FConexoesBaseFirebird := TConexoesBaseFirebird.Create;
+end;
+
+destructor TManager.Destroy;
+begin
+  if Assigned(FConexoesBaseFirebird) then
+    FConexoesBaseFirebird.Free;
+  FConexoesBaseFirebird := nil;
+  inherited;
+end;
+
+class function TManager.GetInstancia: TManager;
+begin
+  if FManagerInstancia = nil then
+    FManagerInstancia := TManager.Create;
+  Result := FManagerInstancia;
+end;
+
+class function TManager.GetNewTempFolder: string;
+begin
+  Result := IncludeTrailingPathDelimiter(
+    Self.GetPathTemp +
+    THashBobJenkins.GetHashString(FormatDateTime('YYYYMMDDHHNNSSZZZ', Now))
+    );
+  if not DirectoryExists(Result) then
+    ForceDirectories(Result);
+end;
+
+class function TManager.GetPathServidor: string;
+begin
+  Result := '';
+{$IFDEF MSWINDOWS}
+  Result := GetModuleName(HInstance).Replace('\\?\', '');
+  if not Trim(Result).IsEmpty then
+    Result := IncludeTrailingPathDelimiter(ExtractFilePath(Result));
+{$ELSE}
+  raise EHorseException.Create('Recuperação do caminho do servidor não definido para essa plataforma.');
+{$ENDIF}
+end;
+
+class function TManager.GetPathTemp: string;
+begin
+  Result := IncludeTrailingPathDelimiter(Self.GetPathServidor + 'temp');
+  if not DirectoryExists(Result) then
+    ForceDirectories(Result);
+end;
+
+class function TManager.IsDebugging: boolean;
+begin
+{$IFDEF MSWINDOWS}
+{$WARNINGS Off}
+  Result := (DebugHook = 1);
+{$WARNINGS On}
+{$ELSE}
+  Result := false;
+  raise EHorseException.Create('Verificação de depuração não definida para essa plataforma.');
+{$ENDIF}
+end;
+
+class function TManager.LiberaDocumentacaoAPI: boolean;
+begin
+ result := IsDebugging;
+end;
+
+class destructor TManager.UnInitialize;
+begin
+  TManager.FreeInstancia;
+end;
+
+
+class procedure TManager.FreeInstancia;
+begin
+  if Assigned(FManagerInstancia) then
+    FManagerInstancia.Free;
+  FManagerInstancia := nil;
+end;
+
+end.

@@ -1,0 +1,81 @@
+unit Database.LoadConnections;
+
+interface
+
+uses
+  System.SysUtils, System.IniFiles, System.StrUtils, Manager,
+  System.Types, System.RegularExpressions, Data.DB,//Services.Base
+  FireDAC.Comp.Client;
+
+function LoadDatabaseConnections: boolean;
+procedure LoadProjectHorseReactConnection;
+procedure TestConnection(const Server, Port, Database, User, Password: string);
+
+implementation
+
+uses
+  System.IOUtils, Utils.Strings;
+
+function LoadDatabaseConnections: boolean;
+begin
+  TManager.FirebirdBaseConnections.Clear;
+  LoadProjectHorseReactConnection;
+  Result := (TManager.FirebirdBaseConnections.Count > 0);
+end;
+
+procedure LoadProjectHorseReactConnection;
+var
+  Ini: TIniFile;
+  aux, bdb, srv, prt, db, vws: STRING;
+begin
+  Ini := TIniFile.Create(TManager.GetPathServidor + 'config.ini');
+  try
+    aux := Ini.ReadString('Conexao', 'DataBase', '');
+    bdb := Ini.ReadString('Conexao', 'Banco', 'Firebird');
+    FreeAndNil(Ini);
+
+    db := copy(aux, pos(':', aux) + 1, length(aux));
+    srv := copy(aux, 1, pos(':', aux) - 1);
+    srv := copy(srv, 1, pos('/', aux) - 1);
+    prt := copy(aux, pos('/', aux) + 1, 4);
+
+  finally
+    Ini.Free;
+  end;
+  try
+    TestConnection(srv, prt, db, 'postgres', 'docker');
+    TManager.FirebirdBaseConnections.Add('ProjetoHorseReact', srv, prt, db, 'postgres', 'docker');
+  except
+    on E: Exception do
+    begin
+    end;
+  end;
+end;
+
+procedure TestConnection(const Server, Port, Database, User, Password: string);
+var
+  FDConnection: TFDConnection;
+begin
+  FDConnection := TFDConnection.Create(nil);
+  try
+    try
+      FDConnection.DriverName := 'PG_DRIVER';
+      FDConnection.LoginPrompt := false;
+      FDConnection.Params.Values['Server'] := Server;
+      FDConnection.Params.Values['Port'] := Port;
+      FDConnection.Params.Values['Database'] := Database;
+      FDConnection.Params.Values['User_Name'] := User;
+      FDConnection.Params.Values['Password'] := Password;
+      FDConnection.Open;
+      FDConnection.Close;
+    except
+      on E: Exception do
+        raise;
+    end;
+  finally
+    FDConnection.Close;
+    FDConnection.Free;
+  end;
+end;
+
+end.

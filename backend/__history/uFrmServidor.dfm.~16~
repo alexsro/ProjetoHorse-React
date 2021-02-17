@@ -1,0 +1,92 @@
+object frmServidor: TfrmServidor
+  Left = 0
+  Top = 0
+  ClientHeight = 131
+  ClientWidth = 368
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  OldCreateOrder = False
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  PixelsPerInch = 96
+  TextHeight = 13
+  object edtPorta: TLabeledEdit
+    Left = 16
+    Top = 24
+    Width = 121
+    Height = 21
+    EditLabel.Width = 26
+    EditLabel.Height = 13
+    EditLabel.Caption = 'Porta'
+    TabOrder = 0
+    Text = '7000'
+  end
+  object btnIniciar: TButton
+    Left = 168
+    Top = 24
+    Width = 75
+    Height = 25
+    Caption = 'Iniciar'
+    TabOrder = 1
+    OnClick = mitIniciarClick
+  end
+  object btnParar: TButton
+    Left = 249
+    Top = 22
+    Width = 75
+    Height = 25
+    Caption = 'Parar'
+    TabOrder = 2
+    OnClick = mitPararClick
+  end
+  object btnFechar: TButton
+    Left = 16
+    Top = 90
+    Width = 75
+    Height = 25
+    Caption = 'Fechar'
+    TabOrder = 3
+    OnClick = mitFecharClick
+  end
+  object AppEvents: TApplicationEvents
+    OnMinimize = AppEventsMinimize
+    Left = 288
+    Top = 68
+  end
+  object PopupTrayIcon: TPopupMenu
+    Left = 216
+    Top = 68
+    object mitIniciar: TMenuItem
+      Caption = 'Iniciar'
+    end
+    object mitParar: TMenuItem
+      Caption = 'Parar'
+    end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object mitFechar: TMenuItem
+      Caption = 'Fechar'
+    end
+  end
+  object TrayIcon: TTrayIcon
+    PopupMenu = PopupTrayIcon
+    Visible = True
+    OnDblClick = TrayIconDblClick
+    Left = 144
+    Top = 68
+  end
+  object FDPhysPgDriverLink1: TFDPhysPgDriverLink
+    DriverID = 'PG_DRIVER'
+    VendorHome = 
+      'F:\Arquivos Desenvolvimento Geral\Reposit'#243'rios GitHub\Aprendizad' +
+      'os-Geral\ProjetoHorse-React\backend'
+    Left = 344
+    Top = 32
+  end
+end

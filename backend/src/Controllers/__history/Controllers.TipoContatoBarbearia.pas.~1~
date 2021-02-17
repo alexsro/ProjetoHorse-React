@@ -1,0 +1,65 @@
+unit Controllers.TipoContatoBarbearia;
+
+interface
+
+uses Horse, System.JSON, Interfaces.Controllers, System.Generics.Collections, REST.JSON, System.SysUtils,
+  Horse.GBSwagger, System.Variants, GBSwagger.Path.Attributes, JSONResponseManager;
+
+Type
+  [SwagPath('tipocontatobarbearia', 'Tipos de contato de barbearias')]
+
+  TControllersTipoContatoBarbearia = class (TInterfacedObject, IControllers)
+  private
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+  public
+    [SwagGET('Listar tipos de contato')]
+    [SwagResponse(200, nil, 'Tipos de contato', True)]
+    procedure Index;
+    [SwagGET('{id}', 'Listar tipo de contato')]
+    [SwagParamQuery('id', 'Id do tipo de contato')]
+    [SwagResponse(200, nil, 'Tipos de contato', True)]
+    procedure IndexById;
+    procedure Insert;
+    procedure Update;
+    procedure Delete;
+  public
+    constructor Create(Req: THorseRequest; Res: THorseResponse);
+  end;
+
+implementation
+
+{ TControllersTipoContatoBarbearia }
+
+constructor TControllersTipoContatoBarbearia.Create(Req: THorseRequest; Res: THorseResponse);
+begin
+  FRequest := Req;
+  FResponse := Res;
+end;
+
+procedure TControllersTipoContatoBarbearia.Index;
+begin
+
+end;
+
+procedure TControllersTipoContatoBarbearia.IndexById;
+begin
+
+end;
+
+procedure TControllersTipoContatoBarbearia.Insert;
+begin
+
+end;
+
+procedure TControllersTipoContatoBarbearia.Delete;
+begin
+
+end;
+
+procedure TControllersTipoContatoBarbearia.Update;
+begin
+
+end;
+
+end.

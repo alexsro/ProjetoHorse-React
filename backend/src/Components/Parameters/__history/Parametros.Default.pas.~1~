@@ -1,0 +1,170 @@
+unit Parametros.Default;
+
+interface
+
+uses
+  SysUtils, StrUtils, System.Generics.Collections, Parametros.Interf;
+
+type
+  IParametros = Parametros.Interf.IParametros;
+
+  TParametros = class(TInterfacedObject, IParametros)
+  private
+    { private declarations }
+    FParametros: TDictionary<string, string>;
+  protected
+    { protected declarations }
+    function StrToBoolean(Value: string): boolean;
+
+    procedure Copy(const OutrosParametros: IParametros);
+    function Count: integer;
+    function Exists(const Nome: string): boolean;
+
+    function GetParametros: TList<string>;
+
+    function GetAsString(const NomeParametro: string): string;
+    function GetAsInteger(const NomeParametro: string): integer;
+    function GetAsBoolean(const NomeParametro: string): boolean;
+    function GetAsCurrency(const NomeParametro: string): Currency;
+
+    function Add(const NomeParametro: string; const ValorParametro: string): IParametros; overload;
+    function Add(const NomeParametro: string; const ValorParametro: integer): IParametros; overload;
+    function Add(const NomeParametro: string; const ValorParametro: boolean): IParametros; overload;
+    function Add(const NomeParametro: string; const ValorParametro: Currency): IParametros; overload;
+    function Add(const Parametros: TDictionary<string,string>): IParametros; overload;
+
+    function SetValue(const NomeParametro: string; const ValorParametro: string): IParametros; overload;
+    function SetValue(const NomeParametro: string; const ValorParametro: integer): IParametros; overload;
+    function SetValue(const NomeParametro: string; const ValorParametro: boolean): IParametros; overload;
+    function SetValue(const NomeParametro: string; const ValorParametro: Currency): IParametros; overload;
+  public
+    { public declarations }
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+implementation
+
+{ TParametros }
+
+function TParametros.Add(const NomeParametro, ValorParametro: string): IParametros;
+begin
+  FParametros.AddOrSetValue(NomeParametro.ToLower, ValorParametro);
+  Result := Self;
+end;
+
+function TParametros.Add(const NomeParametro: string; const ValorParametro: integer): IParametros;
+begin
+  Result := Self.Add(NomeParametro, ValorParametro.ToString);
+end;
+
+function TParametros.Add(const NomeParametro: string; const ValorParametro: boolean): IParametros;
+begin
+  Result := Self.Add(NomeParametro, ifThen(ValorParametro, 'S', 'N'));
+end;
+
+function TParametros.Add(const NomeParametro: string; const ValorParametro: Currency): IParametros;
+begin
+  Result := Self.Add(NomeParametro, CurrToStr(ValorParametro));
+end;
+
+function TParametros.Add(const Parametros: TDictionary<string, string>): IParametros;
+var
+ Pair: TPair<string, string>;
+begin
+  Result := Self;
+  for Pair in Parametros do
+    Self.Add(Pair.Key, Pair.Value);
+end;
+
+procedure TParametros.Copy(const OutrosParametros: IParametros);
+var
+  Parametro: string;
+begin
+  FParametros.Clear;
+
+  for Parametro in OutrosParametros.GetParametros do
+    FParametros.Add(Parametro, OutrosParametros.GetAsString(Parametro));
+end;
+
+function TParametros.Count: integer;
+begin
+  Result := FParametros.Count;
+end;
+
+constructor TParametros.Create;
+begin
+  FParametros := TDictionary<string, string>.Create;
+end;
+
+destructor TParametros.Destroy;
+begin
+  FParametros.Free;
+  FParametros := nil;
+  inherited;
+end;
+
+function TParametros.Exists(const Nome: string): boolean;
+begin
+  Result := Self.FParametros.ContainsKey(Nome.ToLower);
+end;
+
+function TParametros.GetAsBoolean(const NomeParametro: string): boolean;
+begin
+  Result := Self.StrToBoolean(Self.GetAsString(NomeParametro));
+end;
+
+function TParametros.GetAsCurrency(const NomeParametro: string): Currency;
+begin
+  Result := StrToCurrDef(GetAsString(NomeParametro), -1);
+end;
+
+function TParametros.GetAsInteger(const NomeParametro: string): integer;
+begin
+  Result := StrToIntDef(GetAsString(NomeParametro), -1);
+end;
+
+function TParametros.GetAsString(const NomeParametro: string): string;
+var
+  Value: string;
+begin
+  if FParametros.TryGetValue(NomeParametro.ToLower, value) then
+    result := value
+  else
+    result := '';
+end;
+
+function TParametros.GetParametros: TList<string>;
+begin
+  Result := TList<string>.Create(FParametros.Keys);
+end;
+
+function TParametros.SetValue(const NomeParametro: string; const ValorParametro: Currency): IParametros;
+begin
+  Result := Self.SetValue(NomeParametro, CurrToStr(ValorParametro));
+end;
+
+function TParametros.StrToBoolean(Value: string): boolean;
+begin
+  Value := Trim(AnsiLowerCase(Value));
+  Result := (Value = 'true') or (Value = 's') or (Value = 'sim');
+end;
+
+function TParametros.SetValue(const NomeParametro, ValorParametro: string): IParametros;
+begin
+  if FParametros.ContainsKey(NomeParametro) then
+    Self.Add(NomeParametro, ValorParametro);
+  Result := Self;
+end;
+
+function TParametros.SetValue(const NomeParametro: string; const ValorParametro: integer): IParametros;
+begin
+  Result := Self.SetValue(NomeParametro, ValorParametro.ToString);
+end;
+
+function TParametros.SetValue(const NomeParametro: string; const ValorParametro: boolean): IParametros;
+begin
+  Result := Self.SetValue(NomeParametro, ifThen(ValorParametro, 'S', 'N'));
+end;
+
+end.

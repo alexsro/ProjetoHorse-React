@@ -1,0 +1,17 @@
+unit Registrators.Auth.Routes;
+
+interface
+
+procedure RegisterRoutes;
+
+implementation
+
+uses
+  Controllers.Auth.UserAuthentication;
+
+procedure RegisterRoutes();
+begin
+  Controllers.UserAuthentication.Routes();
+end;
+
+end.

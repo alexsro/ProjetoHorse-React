@@ -1,0 +1,44 @@
+program Auth;
+
+{$APPTYPE CONSOLE}
+
+uses
+  Horse,
+  System.SysUtils,
+  System.JSON,
+  FireDAC.Phys.PGDef,
+  FireDAC.Stan.Intf,
+  FireDAC.Phys,
+  FireDAC.Phys.PG,
+  Factorys.Connection.Intf in 'src\Components\Factorys\Factorys.Connection.Intf.pas',
+  Factorys.Connection in 'src\Components\Factorys\Factorys.Connection.pas',
+  Factorys.DataSet.Intf in 'src\Components\Factorys\Factorys.DataSet.Intf.pas',
+  Factorys.DataSet in 'src\Components\Factorys\Factorys.DataSet.pas',
+  Utils.DataSet in 'src\Components\Utils\Utils.DataSet.pas',
+  Utils.Stream in 'src\Components\Utils\Utils.Stream.pas',
+  Utils.Strings in 'src\Components\Utils\Utils.Strings.pas',
+  Database.LoadConnections in 'src\Database\Database.LoadConnections.pas',
+  Manager in 'src\Manager\Manager.pas',
+  Models.FirebirdBaseConnections in 'src\Models\Models.FirebirdBaseConnections.pas',
+  Models.FirebirdConnection in 'src\Models\Models.FirebirdConnection.pas',
+  Models.FirebirdConnectionData in 'src\Models\Models.FirebirdConnectionData.pas',
+  //Registrators.Auth.Routes in 'src\Registrators\Registrators.Auth.Routes.pas',
+  Registrators.Auth.Middlewares in 'src\Registrators\Registrators.Auth.Middlewares.pas';
+
+{$R *.res}
+
+
+var
+  driverPostgree : TFDPhysPgDriverLink;
+
+begin
+  driverPostgree := TFDPhysPgDriverLink.Create(nil);
+  driverPostgree.DriverID := 'PG_DRIVER';
+  driverPostgree.VendorLib = 'F:\Arquivos Desenvolvimento Geral\Reposit'#243'rios GitHub\Aprendizad' +
+    'os-Geral\ProjetoHorse-React\backend\lib\libpq.dll';
+  TManager.AddMiddlewares(RegisterMiddlewares);
+  LoadDatabaseConnections;
+  //TManager.AddRoutes(Registrators.Routes);
+
+  THorse.Listen(9001);
+end.

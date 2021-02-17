@@ -1,0 +1,20 @@
+unit Interfaces.Services;
+
+interface
+
+uses
+  System.Generics.Collections;
+
+Type
+  IServices = interface
+    procedure Salvar(const Value: TObject);overload;
+    procedure Salvar(const Value: TObjectList<TObject>);overload;
+    procedure Excluir(const Value: TObject);overload;
+    procedure Excluir(const Value: TObjectList<TObject>);overload;
+    function Recuperar(const Value: TObjectDictionary<String,String>): TObjectList<TObject>;overload;
+    function GetSQL: String;
+  end;
+
+implementation
+
+end.

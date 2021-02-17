@@ -1,0 +1,61 @@
+unit Controllers.Users;
+
+interface
+
+uses Horse, System.JSON, Interfaces.Controllers, System.Generics.Collections, REST.JSON, System.SysUtils,
+  Horse.GBSwagger, System.Variants, GBSwagger.Path.Attributes, JSONResponseManager, Services.BarberShopTypeContact,
+  Models.BarberShopTypeContact;
+
+Type
+  [SwagPath('usuarios', 'Cadastro de usuários')]
+
+  TControllersUsers = class (TInterfacedObject, IControllers)
+  private
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+  public
+    procedure Registrar;
+    procedure Index;
+    procedure IndexById;
+    procedure Insert;
+    procedure Update;
+    procedure Delete;
+  public
+    constructor Create(Req: THorseRequest; Res: THorseResponse);
+  end;
+
+implementation
+
+uses
+  JOSE.Core.JWT, JOSE.Core.Builder;
+
+{ TControllersUsers }
+
+constructor TControllersUsers.Create(Req: THorseRequest; Res: THorseResponse);
+begin
+  FRequest := Req;
+  FResponse := Res;
+end;
+
+procedure TControllersUsers.Registrar;
+begin
+  THorse.Get('/login', procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    var
+      LToken: TJWT;
+      LCompactToken: string;
+    begin
+      LToken := TJWT.Create;
+      try
+        LToken.Claims.Issuer := 'Alex Sander';
+        LToken.Claims.Subject := '762742';
+        LToken.Claims.Expiration := Now + 1;
+
+        LCompactToken := TJOSE.SHA256CompactToken('TokenJWT', LToken);
+        FResponse.Send(LCompactToken);
+      finally
+        LToken.Free;
+      end;
+    end);
+end;
+
+end.

@@ -1,0 +1,72 @@
+unit SQL.BarberShopTypeContact;
+
+interface
+
+uses
+  SQL.Base, System.SysUtils, System.StrUtils;
+
+type
+  TSQLBarberShopTypeContact = class(TSQLBase)
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+    function GetTables: string;
+  public
+    { public declarations }
+    function GetListagem: string;
+    function GetTotalRegistros: string;
+    function GetEmptyList: string;
+    function GetNextID: String;
+  end;
+
+implementation
+
+uses
+  Utils.Strings;
+
+{ TSQLBarberShopTypeContact }
+
+function TSQLBarberShopTypeContact.GetListagem: string;
+var
+  CamposSP: string;
+begin
+  FParameters.Add('IncluirOrderBy', true);
+
+  Result := 'SELECT * ' + GetTables;
+end;
+
+function TSQLBarberShopTypeContact.GetTotalRegistros: string;
+begin
+  FParameters.Add('IncluirOrderBy', false);
+
+  Result := 'SELECT  ' + '  COUNT(BTC.ID_BTC) AS RECORDS ' + Self.GetTables;
+end;
+
+function TSQLBarberShopTypeContact.GetTables: string;
+var
+  FiltroOrderBy: string;
+  FiltroUsuario: String;
+begin
+
+  Result :=
+    'FROM BARBEARIAS_TIPO_CONTATO BTC ' + ifThen(FParameters.GetAsString('codigo').IsEmpty,
+    'WHERE BTC.ID_BTC IS NOT NULL ', 'WHERE BTC.ID_BTC = ' + FParameters.GetAsString('codigo')+' ');
+
+  if FParameters.GetAsBoolean('IncluirOrderBy') then
+    Result := Result + 'ORDER BY BTC.ID_BTC ';
+end;
+
+function TSQLBarberShopTypeContact.GetEmptyList: string;
+begin
+  result :=
+    'SELECT id_btc, descr_btc  ' +
+    'FROM BARBEARIAS_TIPO_CONTATO WHERE ID_BTC = -1 ';
+end;
+
+function TSQLBarberShopTypeContact.GetNextID: String;
+begin
+  result := 'select nextval(''SEQ_BARBEARIAS_TIPO_CONTATO'') as codigo';
+end;
+
+end.

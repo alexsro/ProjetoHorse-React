@@ -1,0 +1,46 @@
+library Servidor;
+
+{ Important note about DLL memory management: ShareMem must be the
+  first unit in your library's USES clause AND your project's (select
+  Project-View Source) USES clause if your DLL exports any procedures or
+  functions that pass strings as parameters or function results. This
+  applies to all strings passed to and from your DLL--even those that
+  are nested in records and classes. ShareMem is the interface unit to
+  the BORLNDMM.DLL shared memory manager, which must be deployed along
+  with your DLL. To avoid using BORLNDMM.DLL, pass string information
+  using PChar or ShortString parameters. }
+
+uses
+  System.SysUtils,
+  System.Classes,
+  Horse,
+  uFrmServidor in 'uFrmServidor.pas' {frmServidor},
+  Factorys.Connection.Intf in 'src\Components\Factorys\Factorys.Connection.Intf.pas',
+  Factorys.Connection in 'src\Components\Factorys\Factorys.Connection.pas',
+  Factorys.DataSet.Intf in 'src\Components\Factorys\Factorys.DataSet.Intf.pas',
+  Factorys.DataSet in 'src\Components\Factorys\Factorys.DataSet.pas',
+  RequestManager.Interf in 'src\Components\JSONRequestManager\RequestManager.Interf.pas',
+  RequestManager in 'src\Components\JSONRequestManager\RequestManager.pas',
+  JSONResponseManager.Interf in 'src\Components\JSONResponseManager\JSONResponseManager.Interf.pas',
+  JSONResponseManager in 'src\Components\JSONResponseManager\JSONResponseManager.pas',
+  Parameters.Default in 'src\Components\Parameters\Parameters.Default.pas',
+  Parameters.Interf in 'src\Components\Parameters\Parameters.Interf.pas',
+  Utils.DataSet in 'src\Components\Utils\Utils.DataSet.pas',
+  Utils.Stream in 'src\Components\Utils\Utils.Stream.pas',
+  Utils.Strings in 'src\Components\Utils\Utils.Strings.pas',
+  Database.LoadConnections in 'src\Database\Database.LoadConnections.pas',
+  Manager in 'src\Manager\Manager.pas',
+  Models.FirebirdBaseConnections in 'src\Models\Models.FirebirdBaseConnections.pas',
+  Models.FirebirdConnection in 'src\Models\Models.FirebirdConnection.pas',
+  Models.FirebirdConnectionData in 'src\Models\Models.FirebirdConnectionData.pas',
+  Registrators.Middlewares in 'src\Registrators\Registrators.Middlewares.pas',
+  Registrators.Routes in 'src\Registrators\Registrators.Routes.pas';
+
+{$R *.res}
+
+begin
+  TManager.AddMiddlewares(RegistrarMiddlewares);
+  LoadDatabaseConnections;
+  TManager.AddRoutes(Registrators.Routes);
+  THorse.Listen;
+end.

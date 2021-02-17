@@ -1,0 +1,14 @@
+unit Registrators.Auth.Routes;
+
+interface
+
+procedure RegisterRoutes;
+
+implementation
+
+procedure RegisterRoutes();
+begin
+
+end;
+
+end.

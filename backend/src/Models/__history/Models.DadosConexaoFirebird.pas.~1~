@@ -1,0 +1,66 @@
+unit Models.DadosConexaoFirebird;
+
+interface
+
+uses
+  System.SysUtils, System.StrUtils;
+
+type
+  TDadosConexaoFirebird = class
+  private
+    FServidor: string;
+    FPorta: string;
+    FBaseDados: string;
+    FUsuario: string;
+    FSenha: string;
+    FCharSet: string;
+    { private declarations }
+  protected
+    { protected declarations }
+  public
+    { public declarations }
+    constructor Create; overload;
+    constructor Create(const Servidor, Porta, BaseDados, Usuario, Senha: string; CharSet: string = 'WIN1252'); overload;
+    destructor Destroy; override;
+
+    property Servidor: string read FServidor write FServidor;
+    property Porta: string read FPorta write FPorta;
+    property BaseDados: string read FBaseDados write FBaseDados;
+    property Usuario: string read FUsuario write FUsuario;
+    property Senha: string read FSenha write FSenha;
+    property CharSet: string read FCharSet write FCharSet;
+
+    function GetStringConexao: string;
+  end;
+
+implementation
+
+{ TConexaoFirebird }
+
+constructor TDadosConexaoFirebird.Create;
+begin
+
+end;
+
+constructor TDadosConexaoFirebird.Create(const Servidor, Porta, BaseDados, Usuario, Senha: string; CharSet: string);
+begin
+  FServidor := Servidor;
+  FPorta := Porta;
+  FBaseDados := BaseDados;
+  FUsuario := Usuario;
+  FSenha := Senha;
+  FCharSet := CharSet;
+end;
+
+destructor TDadosConexaoFirebird.Destroy;
+begin
+
+  inherited;
+end;
+
+function TDadosConexaoFirebird.GetStringConexao: string;
+begin
+  Result := Format('%s/%s:%s', [FServidor, FPorta, FBaseDados]);
+end;
+
+end.

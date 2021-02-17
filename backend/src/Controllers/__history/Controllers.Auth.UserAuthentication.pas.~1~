@@ -1,0 +1,25 @@
+unit Controllers.Auth.UserAuthentication;
+
+interface
+
+uses
+  Horse, Manager;
+
+procedure Routes;
+
+procedure Validate(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+
+implementation
+
+procedure Routes;
+begin
+  THorse.
+    post('/auth', Validate);
+end;
+
+procedure Validate(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+begin
+
+end;
+
+end.

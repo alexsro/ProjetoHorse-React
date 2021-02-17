@@ -1,0 +1,18 @@
+unit Registrators.Rotas;
+
+interface
+
+procedure RegistrarRotas;
+
+implementation
+
+uses
+  Controllers.Barbearias, Horse.GBSWAGGER;
+
+procedure RegistrarRotas;
+begin
+  THorseGBSwaggerRegister.RegisterPath(TControllersBarbearias);
+end;
+
+
+end.

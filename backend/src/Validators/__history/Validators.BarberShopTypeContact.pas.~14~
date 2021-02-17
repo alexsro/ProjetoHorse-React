@@ -1,0 +1,64 @@
+unit Validators.BarberShopTypeContact;
+
+interface
+
+uses Models.BarberShopTypeContact, system.SysUtils, Models.Message, system.Generics.Collections;
+
+type
+
+  TValidateBarberShopTypeContact = class
+  private
+    FBarberShopTypeContact: TBarberShopTypeContact;
+    FValidateName: TMessage;
+    function ValidarNome: TMessage;
+    procedure setBarberShopTypeConta(const Value: TBarberShopTypeContact);
+  public
+    property Medico: TBarberShopTypeContact write setBarberShopTypeConta;
+    function validar: TObjectList<TMessage>;
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+implementation
+
+uses Enum.Message.Types;
+
+{ TValidateBarberShopTypeContact }
+
+constructor TValidateBarberShopTypeContact.Create;
+begin
+  FValidateName := TMessage.Create;
+end;
+
+destructor TValidateBarberShopTypeContact.Destroy;
+begin
+  FValidateName.Free;
+  inherited;
+end;
+
+procedure TValidateBarberShopTypeContact.setBarberShopTypeConta(const Value: TBarberShopTypeContact);
+begin
+  FBarberShopTypeContact := Value;
+end;
+
+function TValidateBarberShopTypeContact.validar: TObjectList<TMessage>;
+begin
+  result := TObjectList<TMessage>.Create;
+  if self.ValidarNome.Tipo <> TMessageTypes.Nenhum then
+    result.Add(FValidateName)
+end;
+
+function TValidateBarberShopTypeContact.ValidarNome: TMessage;
+begin
+  if Trim(FBarberShopTypeContact.descr_btc) <> '' then
+    FValidateName.Tipo := TMessageTypes.Nenhum
+  else
+  begin
+    FValidateName.Tipo := TMessageTypes.SimNao;
+    FValidateName.texto := 'O campo "descrição" não foi preenchido, deseja continuar?';
+    FValidateName.titulo := 'Validação';
+  end;
+  result := FValidateName;
+end;
+
+end.

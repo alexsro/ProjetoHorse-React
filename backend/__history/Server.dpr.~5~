@@ -1,0 +1,59 @@
+library Server;
+
+{ Important note about DLL memory management: ShareMem must be the
+  first unit in your library's USES clause AND your project's (select
+  Project-View Source) USES clause if your DLL exports any procedures or
+  functions that pass strings as parameters or function results. This
+  applies to all strings passed to and from your DLL--even those that
+  are nested in records and classes. ShareMem is the interface unit to
+  the BORLNDMM.DLL shared memory manager, which must be deployed along
+  with your DLL. To avoid using BORLNDMM.DLL, pass string information
+  using PChar or ShortString parameters. }
+
+uses
+  System.SysUtils,
+  System.Classes,
+  Horse,
+  uFrmServidor in 'uFrmServidor.pas' {frmServidor},
+  Factorys.Connection.Intf in 'src\Components\Factorys\Factorys.Connection.Intf.pas',
+  Factorys.Connection in 'src\Components\Factorys\Factorys.Connection.pas',
+  Factorys.DataSet.Intf in 'src\Components\Factorys\Factorys.DataSet.Intf.pas',
+  Factorys.DataSet in 'src\Components\Factorys\Factorys.DataSet.pas',
+  JSONResponseManager.Interf in 'src\Components\JSONResponseManager\JSONResponseManager.Interf.pas',
+  JSONResponseManager in 'src\Components\JSONResponseManager\JSONResponseManager.pas',
+  Parameters.Default in 'src\Components\Parameters\Parameters.Default.pas',
+  Parameters.Interf in 'src\Components\Parameters\Parameters.Interf.pas',
+  Utils.DataSet in 'src\Components\Utils\Utils.DataSet.pas',
+  Utils.Stream in 'src\Components\Utils\Utils.Stream.pas',
+  Utils.Strings in 'src\Components\Utils\Utils.Strings.pas',
+  Database.LoadConnections in 'src\Database\Database.LoadConnections.pas',
+  Manager in 'src\Manager\Manager.pas',
+  Models.FirebirdBaseConnections in 'src\Models\Models.FirebirdBaseConnections.pas',
+  Models.FirebirdConnection in 'src\Models\Models.FirebirdConnection.pas',
+  Models.FirebirdConnectionData in 'src\Models\Models.FirebirdConnectionData.pas',
+  Registrators.Server.Middlewares in 'src\Registrators\Registrators.Server.Middlewares.pas',
+  Registrators.Server.Routes in 'src\Registrators\Registrators.Server.Routes.pas',
+  Interfaces.Controllers in 'src\Interfaces\Interfaces.Controllers.pas',
+  Interfaces.Services in 'src\Interfaces\Interfaces.Services.pas',
+  Services.Base in 'src\Services\Services.Base.pas',
+  Helpers.HorseRequest in 'src\Helpers\Helpers.HorseRequest.pas',
+  Controllers.BarberShopTypeContact in 'src\Controllers\Controllers.BarberShopTypeContact.pas',
+  Services.BarberShopTypeContact in 'src\Services\Services.BarberShopTypeContact.pas',
+  Helpers.HorseList in 'src\Helpers\Helpers.HorseList.pas',
+  Models.BarberShopTypeContact in 'src\Models\Models.BarberShopTypeContact.pas',
+  SQL.BarberShopTypeContact in 'src\SQL\SQL.BarberShopTypeContact.pas',
+  SQL.Base in 'src\SQL\SQL.Base.pas',
+  Validators.BarberShopTypeContact in 'src\Validators\Validators.BarberShopTypeContact.pas',
+  Enum.BarberShopTypeContact in 'src\Enum\Enum.BarberShopTypeContact.pas',
+  Enum.Message.Types in 'src\Enum\Enum.Message.Types.pas',
+  Models.Message in 'src\Models\Models.Message.pas',
+  Registrators.Auth.Middlewares in 'src\Registrators\Registrators.Auth.Middlewares.pas';
+
+{$R *.res}
+
+begin
+  TManager.AddMiddlewares(RegisterMiddlewares);
+  LoadDatabaseConnections;
+  TManager.AddRoutes(Registrators.Routes);
+  THorse.Listen;
+end.

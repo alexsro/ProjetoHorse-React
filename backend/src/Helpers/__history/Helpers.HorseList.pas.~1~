@@ -1,0 +1,35 @@
+unit Helpers.HorseList;
+
+interface
+
+uses
+  Horse.HTTP, Parametros.Interf, System.Generics.Collections;
+
+type
+  THorseListHelper = class helper for THorseList
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+  public
+    { public declarations }
+    function ToParametros: IParametros;
+  end;
+
+implementation
+
+uses
+  Parametros.Default;
+
+{ THorseListHelper }
+
+function THorseListHelper.ToParametros: IParametros;
+var
+ Param: TPair<string, string>;
+begin
+  Result := TParametros.Create;
+  for Param in Self do
+    Result.Add(Param.Key, Param.Value);
+end;
+
+end.

@@ -1,0 +1,239 @@
+unit RequestManager;
+
+interface
+
+uses
+  RequestManager.Interf, RESTRequest4D.Request, Data.DB, REST.Types,
+  System.SysUtils, System.StrUtils, Models.Pagination, System.JSON,
+  DataSet.Serialize, System.Generics.Collections, FireDAC.Comp.Client;
+
+type
+  IRequestManager = RequestManager.Interf.IRequestManager;
+
+  TRequestManager = class(TInterfacedObject, IRequestManager)
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+    FResponse: IResponse;
+    FRequest: IRequest;
+    FDataSetAdapter: TDataSet;
+    //FPagination: TPagination;
+    FClearFields: boolean;
+    function BaseURL(const Value: string): IRequestManager; overload;
+    function BaseURL: string; overload;
+    function Resource(const Value: string): IRequestManager; overload;
+    function Resource: string; overload;
+    function ResourceSuffix(const Value: string): IRequestManager; overload;
+    function ResourceSuffix: string; overload;
+    //function Pagination(const Value: TPagination): IRequestManager; overload;
+    //function Pagination: TPagination; overload;
+    function DataSetAdapter(const Value: TDataSet; ClearFields: boolean = true): IRequestManager; overload;
+    function DataSetAdapter: TDataSet; overload;
+    function FullRequestURL(const IncluirParametros: Boolean = True): string;
+    function AddHeader(const Name, Value: string; const Options: TRESTRequestParameterOptions = []): IRequestManager;
+    function AddParam(const Name, Value: string;
+      const Kind: TRESTRequestParameterKind = TRESTRequestParameterKind.pkGETorPOST): IRequestManager;
+    function Get: IResponse;
+    function GetPaginate: IResponse;
+
+    procedure LoadDataSet;
+    procedure LoadPagination;
+    procedure ActiveCachedUpdates(const DataSet: TDataSet; const Active: Boolean = true);
+  public
+    { public declarations }
+    constructor Create;
+    destructor Destroy; override;
+
+    class function New: IRequestManager;
+  end;
+
+implementation
+
+{ TRequestManager }
+
+constructor TRequestManager.Create;
+begin
+  FRequest := TRequest.Create;
+  FRequest.RaiseExceptionOn500(true);
+  FResponse := nil;
+  FDataSetAdapter := nil;
+  //FPagination := nil;
+end;
+
+destructor TRequestManager.Destroy;
+begin
+  FRequest := nil;
+  FResponse := nil;
+  FDataSetAdapter := nil;
+  //FPagination := nil;
+  inherited;
+end;
+
+function TRequestManager.AddHeader(const Name, Value: string; const Options: TRESTRequestParameterOptions): IRequestManager;
+begin
+  Result := Self;
+  FRequest.AddHeader(name, Value, Options);
+end;
+
+function TRequestManager.AddParam(const Name, Value: string; const Kind: TRESTRequestParameterKind): IRequestManager;
+begin
+  Result := Self;
+  FRequest.AddParam(name, Value, Kind);
+end;
+
+function TRequestManager.BaseURL: string;
+begin
+  Result := FRequest.BaseURL;
+end;
+
+function TRequestManager.BaseURL(const Value: string): IRequestManager;
+begin
+  Result := Self;
+  FRequest.BaseURL(Value);
+end;
+
+function TRequestManager.Resource(const Value: string): IRequestManager;
+begin
+  Result := Self;
+  FRequest.Resource(Value);
+end;
+
+function TRequestManager.Resource: string;
+begin
+  Result := FRequest.Resource;
+end;
+
+function TRequestManager.ResourceSuffix(const Value: string): IRequestManager;
+begin
+  Result := Self;
+  FRequest.ResourceSuffix(Value);
+end;
+
+function TRequestManager.ResourceSuffix: string;
+begin
+  Result := FRequest.ResourceSuffix;
+end;
+
+function TRequestManager.FullRequestURL(const IncluirParametros: Boolean): string;
+begin
+  Result := FRequest.FullRequestURL(IncluirParametros);
+end;
+
+function TRequestManager.Get: IResponse;
+begin
+  FResponse := FRequest.Get;
+  Result := FResponse;
+  if Assigned(FDataSetAdapter) then
+    Self.LoadDataSet;
+  //if Assigned(FPagination) then
+  //  Self.LoadPagination;
+end;
+
+procedure TRequestManager.LoadDataSet;
+var
+  LData: TJSONArray;
+begin
+  if Assigned(FDataSetAdapter) then
+  begin
+    // ActiveCachedUpdates(FDataSetAdapter, False);
+    FDataSetAdapter.Close;
+
+    if FClearFields then
+    begin
+      FDataSetAdapter.Fields.Clear;
+      FDataSetAdapter.FieldDefs.Clear;
+    end;
+
+   if (Assigned(FResponse.JSONValue)) and
+      ((Trim(FResponse.JSONValue.ToString) <> '') and (Trim(FResponse.JSONValue.ToString) <> '{}') and
+      (Trim(FResponse.JSONValue.ToString) <> '[]')) then
+    begin
+      if FResponse.JSONValue.TryGetValue<TJSONArray>('data', LData) then
+        FDataSetAdapter.LoadFromJSON(LData, False)
+      else
+        FDataSetAdapter.LoadFromJSON(FResponse.Content);
+      // ActiveCachedUpdates(FDataSetAdapter);
+    end;
+  end;
+end;
+
+procedure TRequestManager.ActiveCachedUpdates(const DataSet: TDataSet; const Active: Boolean);
+var
+  LDataSet: TDataSet;
+  LDataSetDetails: TList<TDataSet>;
+begin
+  LDataSetDetails := TList<TDataSet>.Create;
+  try
+    if DataSet is TFDMemTable then
+    begin
+      if not Active then
+        TFDMemTable(DataSet).Close;
+      TFDMemTable(DataSet).CachedUpdates := Active;
+      if Active and (not TFDMemTable(DataSet).Active) and (TFDMemTable(DataSet).FieldCount > 0) then
+        TFDMemTable(DataSet).Open;
+    end;
+    DataSet.GetDetailDataSets(LDataSetDetails);
+    for LDataSet in LDataSetDetails do
+      ActiveCachedUpdates(LDataSet, Active);
+  finally
+    LDataSetDetails.Free;
+  end;
+end;
+
+//procedure TRequestManager.LoadPagination;
+//var
+//  LTotal: Integer;
+//begin
+//  if (Assigned(FPagination)) and (Assigned(FResponse.JSONValue)) and
+//      ((Trim(FResponse.JSONValue.ToString) <> '') and (Trim(FResponse.JSONValue.ToString) <> '{}') and
+//      (Trim(FResponse.JSONValue.ToString) <> '[]')) then
+//  begin
+//    if FResponse.JSONValue.TryGetValue<Integer>('records', LTotal) then
+//      FPagination.Total := LTotal;
+//  end;
+//end;
+
+class function TRequestManager.New: IRequestManager;
+begin
+  Result := TRequestManager.Create;
+end;
+
+function TRequestManager.GetPaginate: IResponse;
+begin
+  Self.AddHeader('X-Paginate', 'true');
+  if Assigned(FPagination) then
+  begin
+    Self.AddParam('limit', FPagination.Limit.ToString)
+      .AddParam('skip', FPagination.CalculateSkip.ToString);
+    if FPagination.RequestTotal then
+      Self.AddParam('records', 'true');
+  end;
+  Result := Self.Get;
+end;
+
+function TRequestManager.Pagination(const Value: TPagination): IRequestManager;
+begin
+  Result := Self;
+  FPagination := Value;
+end;
+
+function TRequestManager.Pagination: TPagination;
+begin
+  Result := FPagination;
+end;
+
+function TRequestManager.DataSetAdapter(const Value: TDataSet; ClearFields: boolean = true): IRequestManager;
+begin
+  Result := Self;
+  FDataSetAdapter := Value;
+  FClearFields := (ClearFields) and (Value.FieldCount = 0);
+end;
+
+function TRequestManager.DataSetAdapter: TDataSet;
+begin
+  Result := FDataSetAdapter;
+end;
+
+
+end.

@@ -1,0 +1,81 @@
+unit Database.CarregaConexoes;
+
+interface
+
+uses
+  System.SysUtils, System.IniFiles, System.StrUtils, Cavalin,
+  System.Types, System.RegularExpressions, Services.Base, Data.DB,
+  FireDAC.Comp.Client;
+
+function CarregarConexoesBaseDados: boolean;
+procedure CarregarConexaoProjetoHorseReact;
+procedure TestarConexao(const Servidor, Porta, BaseDados, Usuario, Senha: string);
+
+implementation
+
+uses
+  System.IOUtils, Helpers.ConexoesBaseFirebird, Utils.Strings;
+
+function CarregarConexoesBaseDados: boolean;
+begin
+  TCavalin.ConexoesBaseFirebird.Clear;
+  CarregarConexaoProjetoHorseReact;
+  Result := (TCavalin.ConexoesBaseFirebird.Count > 0);
+end;
+
+procedure CarregarConexaoProjetoHorseReact;
+var
+  Ini: TIniFile;
+  aux, bdb, srv, prt, db, vws: STRING;
+begin
+  Ini := TIniFile.Create(TCavalin.GetPathServidor + 'config.ini');
+  try
+    aux := Ini.ReadString('Conexao', 'DataBase', '');
+    bdb := Ini.ReadString('Conexao', 'Banco', 'Firebird');
+    FreeAndNil(Ini);
+
+    db := copy(aux, pos(':', aux) + 1, length(aux));
+    srv := copy(aux, 1, pos(':', aux) - 1);
+    srv := copy(srv, 1, pos('/', aux) - 1);
+    prt := copy(aux, pos('/', aux) + 1, 4);
+
+  finally
+    Ini.Free;
+  end;
+  try
+    TestarConexao(srv, prt, db, 'postgres', 'docker');
+    TCavalin.ConexoesBaseFirebird.Add('ProjetoHorseReact', srv, prt, db, 'postgres', 'docker');
+  except
+    on E: Exception do
+    begin
+    end;
+  end;
+end;
+
+procedure TestarConexao(const Servidor, Porta, BaseDados, Usuario, Senha: string);
+var
+  FDConnection: TFDConnection;
+begin
+  FDConnection := TFDConnection.Create(nil);
+  try
+    try
+      FDConnection.DriverName := 'PG_DRIVER';
+      FDConnection.LoginPrompt := false;
+      FDConnection.Params.Values['Server'] := Servidor;
+      FDConnection.Params.Values['Port'] := Porta;
+      FDConnection.Params.Values['Database'] := BaseDados;
+      FDConnection.Params.Values['User_Name'] := Usuario;
+      FDConnection.Params.Values['Password'] := Senha;
+      FDConnection.Open;
+      FDConnection.Close;
+    except
+      on E: Exception do
+        raise;
+    end;
+  finally
+    FDConnection.Close;
+    FDConnection.Free;
+  end;
+end;
+
+end.

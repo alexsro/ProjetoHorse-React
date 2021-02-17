@@ -1,0 +1,203 @@
+unit Database.CarregaConexoes;
+
+interface
+
+uses
+  System.SysUtils, System.IniFiles, System.StrUtils, Cavalin,
+  System.Types, System.RegularExpressions, Services.Base, Data.DB,
+  FireDAC.Comp.Client;
+
+function CarregarConexoesBaseDados: boolean;
+procedure CarregarConexoesSCPI;
+procedure CarregarConexoesSED;
+procedure CarregarConexoesSIP;
+procedure CarregarConexaoProjetoHorseReact;
+procedure TestarConexao(const Servidor, Porta, BaseDados, Usuario, Senha: string);
+
+implementation
+
+uses
+  System.IOUtils, Helpers.ConexoesBaseFirebird, Utils.Strings;
+
+function CarregarConexoesBaseDados: boolean;
+begin
+  TCavalin.ConexoesBaseFirebird.Clear;
+//  CarregarConexoesSCPI;
+//  CarregarConexoesSED;
+//  CarregarConexoesSIP;
+  CarregarConexaoProjetoHorseReact;
+  Result := (TCavalin.ConexoesBaseFirebird.Count > 0);
+end;
+
+procedure CarregarConexoesSCPI;
+var
+  Ini: TIniFile;
+  Servidor: string;
+  Porta: string;
+  CaminhoBaseDados: string;
+  ExercicioInicial: string;
+  ExerciciosNaoListados: string;
+  ExercicioAtual: string;
+  BarraSO: string;
+  I: Integer;
+  BaseDados: string;
+  Exercicio: string;
+begin
+  Ini := TIniFile.Create(TCavalin.GetPathServidor + 'portaltransparencia.ini');
+  try
+    Servidor := Ini.ReadString('SCPI', 'SERVIDOR', 'localhost');
+    Porta := Ini.ReadString('SCPI', 'PORTA', '3050');
+    CaminhoBaseDados := Trim(Ini.ReadString('SCPI', 'CaminhoBaseDados', ''));
+    ExercicioInicial := Ini.ReadString('SCPI', 'ExercicioInicial', '');
+    ExerciciosNaoListados := Ini.ReadString('SCPI', 'ExerciciosNaoListados', '');
+  finally
+    Ini.Free;
+  end;
+  if (Trim(Servidor).IsEmpty) or (Trim(Porta).IsEmpty) or (Trim(CaminhoBaseDados).IsEmpty) or
+    (Trim(ExercicioInicial).IsEmpty) then
+    Exit;
+  ExercicioAtual := FormatDateTime('YYYY', now);
+  BarraSO := ifThen(CaminhoBaseDados.Contains('/'), '/', '\');
+  if (not Trim(CaminhoBaseDados).IsEmpty) and (not CaminhoBaseDados.EndsWith(BarraSO)) then
+    CaminhoBaseDados := CaminhoBaseDados + BarraSO;
+  for I := StrToInt(ExercicioInicial) to (StrToInt(ExercicioAtual) + 1) do
+  begin
+    Exercicio := IntToStr(I);
+    if ExerciciosNaoListados.Contains(Exercicio) then
+      Continue;
+    BaseDados := CaminhoBaseDados + 'ARQ' + Exercicio + BarraSO + 'SCPI' + Exercicio + '.FDB';
+    try
+      TestarConexao(Servidor, Porta, BaseDados, 'FSCSCPI8', 'scpi');
+      TCavalin.ConexoesBaseFirebird.Add('SCPI' + Exercicio, Servidor, Porta, BaseDados, 'FSCSCPI8', 'scpi');
+    except
+      on E: Exception do
+      begin
+      end;
+    end;
+  end;
+end;
+
+procedure CarregarConexoesSED;
+var
+  Ini: TIniFile;
+  Servidor: string;
+  Porta: string;
+  CaminhoBaseDados: string;
+  BarraSO: string;
+  I: Integer;
+  BaseDados: string;
+begin
+  Ini := TIniFile.Create(TCavalin.GetPathServidor + 'portaltransparencia.ini');
+  try
+    Servidor := Ini.ReadString('SED', 'SERVIDOR', 'localhost');
+    Porta := Ini.ReadString('SED', 'PORTA', '3050');
+    CaminhoBaseDados := Trim(Ini.ReadString('SED', 'CaminhoBaseDados', ''));
+  finally
+    Ini.Free;
+  end;
+  if (Trim(Servidor).IsEmpty) or (Trim(Porta).IsEmpty) or (Trim(CaminhoBaseDados).IsEmpty) then
+    Exit;
+  BarraSO := ifThen(CaminhoBaseDados.Contains('/'), '/', '\');
+  if (not Trim(CaminhoBaseDados).IsEmpty) and (not CaminhoBaseDados.EndsWith(BarraSO)) then
+    CaminhoBaseDados := CaminhoBaseDados + BarraSO;
+  BaseDados := CaminhoBaseDados + 'SEDFIORILLI.FDB';
+  try
+    TestarConexao(Servidor, Porta, BaseDados, 'SYSDBA', 'masterkey');
+    TCavalin.ConexoesBaseFirebird.Add('SED', Servidor, Porta, BaseDados, 'SYSDBA', 'masterkey');
+  except
+    on E: Exception do
+    begin
+    end;
+  end;
+end;
+
+procedure CarregarConexoesSIP;
+var
+  Ini: TIniFile;
+  Servidor: string;
+  Porta: string;
+  CaminhoBaseDados: string;
+  BarraSO: string;
+  I: Integer;
+  BaseDados: string;
+begin
+  Ini := TIniFile.Create(TCavalin.GetPathServidor + 'portaltransparencia.ini');
+  try
+    Servidor := Ini.ReadString('SIP', 'SERVIDOR', 'localhost');
+    Porta := Ini.ReadString('SIP', 'PORTA', '3050');
+    CaminhoBaseDados := Trim(Ini.ReadString('SIP', 'CaminhoBaseDados', ''));
+  finally
+    Ini.Free;
+  end;
+  if (Trim(Servidor).IsEmpty) or (Trim(Porta).IsEmpty) or (Trim(CaminhoBaseDados).IsEmpty) then
+    Exit;
+  BarraSO := ifThen(CaminhoBaseDados.Contains('/'), '/', '\');
+  if (not Trim(CaminhoBaseDados).IsEmpty) and (not CaminhoBaseDados.EndsWith(BarraSO)) then
+    CaminhoBaseDados := CaminhoBaseDados + BarraSO;
+  BaseDados := CaminhoBaseDados + 'SIP.FDB';
+  try
+    TestarConexao(Servidor, Porta, BaseDados, 'FSCSIP', 'sip');
+    TCavalin.ConexoesBaseFirebird.Add('SIP', Servidor, Porta, BaseDados, 'FSCSIP', 'sip');
+  except
+    on E: Exception do
+    begin
+    end;
+  end;
+end;
+
+procedure CarregarConexaoProjetoHorseReact;
+var
+  Ini: TIniFile;
+  aux, bdb, srv, prt, db, vws: STRING;
+begin
+  Ini := TIniFile.Create(TCavalin.GetPathServidor + 'config.ini');
+  try
+    aux := Ini.ReadString('Conexao', 'DataBase', '');
+    bdb := Ini.ReadString('Conexao', 'Banco', 'Firebird');
+    FreeAndNil(Ini);
+
+    db := copy(aux, pos(':', aux) + 1, length(aux));
+    srv := copy(aux, 1, pos(':', aux) - 1);
+    srv := copy(srv, 1, pos('/', aux) - 1);
+    prt := copy(aux, pos('/', aux) + 1, 4);
+
+  finally
+    Ini.Free;
+  end;
+  try
+    TestarConexao(srv, prt, db, 'postgres', 'docker');
+    TCavalin.ConexoesBaseFirebird.Add('ProjetoHorseReact', srv, prt, db, 'postgres', 'docker');
+  except
+    on E: Exception do
+    begin
+    end;
+  end;
+end;
+
+procedure TestarConexao(const Servidor, Porta, BaseDados, Usuario, Senha: string);
+var
+  FDConnection: TFDConnection;
+begin
+  FDConnection := TFDConnection.Create(nil);
+  try
+    try
+      FDConnection.DriverName := 'PG';
+      FDConnection.LoginPrompt := false;
+      FDConnection.Params.Values['Server'] := Servidor;
+      FDConnection.Params.Values['Port'] := Porta;
+      FDConnection.Params.Values['Database'] := BaseDados;
+      FDConnection.Params.Values['User_Name'] := Usuario;
+      FDConnection.Params.Values['Password'] := Senha;
+      FDConnection.Open;
+      FDConnection.Close;
+    except
+      on E: Exception do
+        raise;
+    end;
+  finally
+    FDConnection.Close;
+    FDConnection.Free;
+  end;
+end;
+
+end.

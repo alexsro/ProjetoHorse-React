@@ -1,0 +1,11 @@
+backend/*.stat
+backend/*.res
+backend/*.identcache
+backend/*.local
+backend/modules/
+backend/lib/
+backend/DCUs/
+backend/Bin
+*.txt
+!.gitignore.txt
+*.rar

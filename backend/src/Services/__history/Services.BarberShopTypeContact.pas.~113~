@@ -1,0 +1,304 @@
+unit Services.BarberShopTypeContact;
+
+interface
+
+uses
+  Services.Base, FireDAC.Comp.Client, System.SysUtils, Parameters.Interf, Parameters.Default, Helpers.HorseList, JSON,
+  Models.BarberShopTypeContact, System.Generics.Collections, SQL.BarberShopTypeContact, Firedac.Stan.Async, REST.JSON,
+  Validators.BarberShopTypeContact, Models.Message, Enum.Message.Types;
+
+Type
+  TServicesBarberShopTypeContact = class(TServicesBase)
+  private
+    function GetItemFromDataSet(Value: TFDQuery): TBarberShopTypeContact;
+    function SetBarberShopTypeContact(const Value: TBarberShopTypeContact): TJsonObject;
+    procedure SetItemFromDataSet(Value: TBarberShopTypeContact; const Query: TFDQuery;
+      const SQL: TSQLBarberShopTypeContact);
+    procedure LoadData(Value: TObject; const Query: TFDQuery;
+      const SQL: TSQLBarberShopTypeContact);
+    procedure SaveList(const Value: TObjectList<TObject>; const Query: TFDQuery; const SQL: TSQLBarberShopTypeContact);
+    procedure SaveItem(const Value: TObject; const Query: TFDQuery; const SQL: TSQLBarberShopTypeContact);
+    procedure Remove(const Value: TObject; const Query: TFDQuery;
+  const SQL: TSQLBarberShopTypeContact);
+
+  public
+    function GetRecordsTypesOfBarbershops: integer;
+    function GetTypesOfBarbershops: TList<TJSONObject>;
+    function SetTypesOfBarbershops: TList<TJSONObject>;
+    function UpdateTypesOfBarbershops: TList<TJSONObject>;
+    procedure DeleteTypesOfBarbershops;
+
+  end;
+
+implementation
+
+uses
+  DataSet.Serialize, Factorys.DataSet, Data.DB;
+
+function TServicesBarberShopTypeContact.GetTypesOfBarbershops: TList<TJSONObject>;
+var
+  SQL: TSQLBarberShopTypeContact;
+  Parameters: IParameters;
+  RQuery: TFDQuery;
+  FBarberShopTypeContact: TBarberShopTypeContact;
+  FListBarberShopTypeContact: TObjectList<TBarberShopTypeContact>;
+  RJSONObj: TJSONObject;
+begin
+  Result := TList<TJSONObject>.Create;
+  FListBarberShopTypeContact := TObjectList<TBarberShopTypeContact>.Create();
+  RQuery := TFactoryDataSet.GetInstance(FConnection).CreateQuery();
+
+  Parameters := FReq.Params.ToParametros.Add(FReq.Query);
+
+  SQL := TSQLBarberShopTypeContact.Create(Parameters);
+  try
+    Self.PageQuery(RQuery);
+    RQuery.SQL.Text := SQL.GetList;
+    RQuery.Open();
+    while not RQuery.Eof do
+    begin
+      FListBarberShopTypeContact.Add(GetItemFromDataSet(RQuery));
+      RQuery.Next;
+    end;
+    for FBarberShopTypeContact in FListBarberShopTypeContact do
+    begin
+      RJSONObj := SetBarberShopTypeContact(FBarberShopTypeContact);
+      Result.Add(RJSONObj);
+    end;
+  finally
+    SQL.Free;
+    FListBarberShopTypeContact.Free;
+  end;
+end;
+
+function TServicesBarberShopTypeContact.GetRecordsTypesOfBarbershops: integer;
+var
+  SQL: TSQLBarberShopTypeContact;
+  Parameters: IParameters;
+  RQuery: TFDQuery;
+begin
+  Result := 0;
+
+  Parameters := FReq.Params.ToParametros.Add(FReq.Query);
+
+  SQL := TSQLBarberShopTypeContact.Create(Parameters);
+  try
+    RQuery := TFactoryDataSet.GetInstance(FConnection).CreateQuery();
+    RQuery.SQL.Text := SQL.GetTotalRecords;
+    RQuery.Open();
+
+    Result := RQuery.FieldByName('RECORDS').AsInteger;
+  finally
+    SQL.Free;
+  end;
+end;
+
+function TServicesBarberShopTypeContact.SetTypesOfBarbershops: TList<TJSONObject>;
+var
+  SQL: TSQLBarberShopTypeContact;
+  Parameters: IParameters;
+  RJSONVal : TJSONValue;
+  RJSONObj: TJSONObject;
+  RQueryInsert: TFDQuery;
+  FBarberShopTypeContact: TBarberShopTypeContact;
+  FListBarberShopTypeContact: TObjectList<TObject>;
+  FValidator: TValidateBarberShopTypeContact;
+  FMessage: TMessage;
+  FListMessage: TList<TMessage>;
+begin
+  Result := TList<TJSONObject>.Create;
+  FListBarberShopTypeContact := TObjectList<TObject>.Create();
+  RQueryInsert := TFactoryDataSet.GetInstance(FConnection).CreateQuery();
+  FValidator := TValidateBarberShopTypeContact.Create;
+  FListMessage := TList<TMessage>.Create;
+
+  Parameters := FReq.Params.ToParametros.Add(FReq.Query);
+
+  SQL := TSQLBarberShopTypeContact.Create(Parameters);
+  try
+    RJSONVal := FReq.Body<TJsonObject>;
+    FBarberShopTypeContact := TJSON.JsonToObject<TBarberShopTypeContact>(RJSONVal.ToJSON);
+    FValidator.BarberShopTypeContact :=  FBarberShopTypeContact;
+    if FValidator.Validate.Count = 0 then
+      FListBarberShopTypeContact.Add(FBarberShopTypeContact)
+    else
+    begin
+      for FMessage in FValidator.Validate DO
+        FListMessage.Add(FMessage);
+    end;
+    if FListMessage.Count = 0 then
+    begin
+      SaveList(FListBarberShopTypeContact, RQueryInsert, SQL);
+      RJSONObj := TJSON.ObjectToJsonObject(FBarberShopTypeContact, [joIgnoreEmptyArrays, joIgnoreEmptyStrings]);
+      Result.Add(RJSONObj);
+    end
+    else
+    begin
+      RJSONObj := TJSON.ObjectToJsonObject(FListMessage, [joIgnoreEmptyArrays, joIgnoreEmptyStrings]);
+      Result.Add(RJSONObj);
+    end;
+  finally
+    FValidator.Free;
+    FListBarberShopTypeContact.Free;
+    SQL.Free;
+  end;
+end;
+
+function TServicesBarberShopTypeContact.UpdateTypesOfBarbershops: TList<TJSONObject>;
+var
+  FBarberShopTypeContact: TBarberShopTypeContact;
+  FValidator: TValidateBarberShopTypeContact;
+  RJSONObj: TJSONObject;
+  SQL: TSQLBarberShopTypeContact;
+  RQueryUpdate: TFDQuery;
+  Parameters: IParameters;
+begin
+  Result := TList<TJSONObject>.Create;
+  FValidator := TValidateBarberShopTypeContact.Create;
+  Parameters := FReq.Params.ToParametros.Add(FReq.Query);
+  RQueryUpdate := TFactoryDataSet.GetInstance(FConnection).CreateQuery();
+
+  SQL := TSQLBarberShopTypeContact.Create(Parameters);
+
+  try
+    FBarberShopTypeContact := TJSON.JsonToObject<TBarberShopTypeContact>(FReq.Body<TJSONObject>.ToJSON);
+    FBarberShopTypeContact.id_btc := FReq.Params.Items['codigo'].ToInteger;
+    FValidator.BarberShopTypeContact := FBarberShopTypeContact;
+    if FValidator.Validate.Count = 0 then
+    begin
+      SaveItem(FBarberShopTypeContact, RQueryUpdate, SQL);
+      RJSONObj := TJSON.ObjectToJsonObject(FBarberShopTypeContact, [joIgnoreEmptyArrays, joIgnoreEmptyStrings]);
+      Result.Add(RJSONObj);
+    end
+    else
+    begin
+      RJSONObj := TJSON.ObjectToJsonObject(FValidator.Validate, [joIgnoreEmptyArrays, joIgnoreEmptyStrings]);
+      Result.Add(RJSONObj);
+    end;
+
+  finally
+    FValidator.Free;
+    SQL.Free;
+  end;
+end;
+
+procedure TServicesBarberShopTypeContact.DeleteTypesOfBarbershops;
+var
+  FBarberShopTypeContact: TBarberShopTypeContact;
+  RJSONObj: TJSONObject;
+  SQL: TSQLBarberShopTypeContact;
+  RQueryDelete: TFDQuery;
+  Parameters: IParameters;
+  FMessage: TMessage;
+begin
+  Parameters := FReq.Params.ToParametros.Add(FReq.Query);
+  RQueryDelete := TFactoryDataSet.GetInstance(FConnection).CreateQuery();
+  FBarberShopTypeContact := TBarberShopTypeContact.Create;
+
+  SQL := TSQLBarberShopTypeContact.Create(Parameters);
+
+  try
+    try
+      FBarberShopTypeContact.id_btc := FReq.Params.Items['codigo'].ToInteger;
+      Remove(FBarberShopTypeContact, RQueryDelete, SQL);
+      FRes.Status(204);
+    except
+      on E: Exception do
+      begin
+        FMessage := TMessage.Create;
+        FMessage.Typee := TMessageTypes.Ok;
+        FMessage.Text := E.Message;
+        FMessage.Title := 'Erro';
+        FRes.Status(500).Send<TJSONObject>(TJson.ObjectToJsonObject(FMessage, [joIgnoreEmptyStrings, joIgnoreEmptyArrays]))
+      end;
+    end;
+
+  finally
+    SQL.Free;
+    FBarberShopTypeContact.Free
+  end;
+end;
+
+procedure TServicesBarberShopTypeContact.Remove(const Value: TObject; const Query: TFDQuery;
+  const SQL: TSQLBarberShopTypeContact);
+begin
+  try
+    LoadData(Value, Query, SQL);
+    if Query.IsEmpty then
+      raise Exception.Create('Não foi escontrado um registro para exclusão');
+    Query.Edit;
+    Query.Delete;
+  except
+    raise Exception.Create('Erro ao tentar excluir o tipo de contato.');
+  end;
+end;
+
+procedure TServicesBarberShopTypeContact.SaveList(const Value: TObjectList<TObject>; const Query: TFDQuery;
+  const SQL: TSQLBarberShopTypeContact);
+var
+  FBarberShopTypeContact: TBarberShopTypeContact;
+begin
+  for FBarberShopTypeContact in TObjectList<TBarberShopTypeContact>(Value) do
+  begin
+    SaveItem(FBarberShopTypeContact, Query, SQL);
+  end;
+end;
+
+procedure TServicesBarberShopTypeContact.SaveItem(const Value: TObject; const Query: TFDQuery;
+  const SQL: TSQLBarberShopTypeContact);
+begin
+  try
+    LoadData(Value, Query, SQL);
+    setItemFromDataSet(TBarberShopTypeContact(Value), Query, SQL);
+    Query.Post;
+    SaveQuery([Query]);
+    TBarberShopTypeContact(Value).id_btc := Query.FieldByName('id_btc').AsInteger
+  except
+    raise Exception.Create('Error ao tentar salvar o tipo de contato da barbearia');
+  end;
+end;
+
+procedure TServicesBarberShopTypeContact.LoadData(Value: TObject; const Query: TFDQuery;
+  const SQL: TSQLBarberShopTypeContact);
+begin
+  Query.SQL.Text := SQL.GetList;
+  Query.Open();
+end;
+
+procedure TServicesBarberShopTypeContact.SetItemFromDataSet(Value: TBarberShopTypeContact; const Query: TFDQuery;
+  const SQL: TSQLBarberShopTypeContact);
+var
+  RQuery: TFDQuery;
+begin
+  if Value.id_btc > 0 then
+  begin
+    Query.Edit;
+    Query.FieldByName('id_btc').AsInteger := Value.id_btc;
+  end
+  else
+  begin
+    RQuery := TFactoryDataSet.GetInstance(FConnection).CreateQuery();
+    RQuery.SQL.Text := SQL.GetNextID;
+    RQuery.Open();
+    Query.Insert;
+    Query.FieldByName('id_btc').AsInteger := RQuery.FieldByName('codigo').AsInteger;
+  end;
+  Query.FieldByName('descr_btc').AsString := Value.descr_btc;
+end;
+
+
+function TServicesBarberShopTypeContact.SetBarberShopTypeContact(const Value: TBarberShopTypeContact): TJSONObject;
+begin
+  result := TJSONObject.Create;
+  result.AddPair('descr_btc', TJSONNumber.Create(Value.id_btc));
+  result.AddPair('descr_btc', Value.descr_btc);
+end;
+
+function TServicesBarberShopTypeContact.GetItemFromDataSet(Value: TFDQuery): TBarberShopTypeContact;
+begin
+  Result := TBarberShopTypeContact.Create;
+  Result.id_btc := Value.FieldByName('id_btc').AsInteger;
+  Result.descr_btc := Value.FieldByName('descr_btc').AsString;
+end;
+
+end.

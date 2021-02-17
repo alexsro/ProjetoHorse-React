@@ -1,0 +1,25 @@
+object DMConexao: TDMConexao
+  OldCreateOrder = False
+  Height = 144
+  Width = 215
+  object Conexao: TFDConnection
+    Params.Strings = (
+      'DriverID=PG_DRIVER'
+      'Server = localhost'
+      'Port = 5433'
+      'Database = postgres'
+      'User_Name = postgres'
+      'Password = docker')
+    LoginPrompt = False
+    Left = 24
+    Top = 16
+  end
+  object PG_DRIVER: TFDPhysPgDriverLink
+    DriverID = 'PG_DRIVER2'
+    VendorHome = 
+      'F:\Arquivos Desenvolvimento Geral\Reposit'#243'rios GitHub\Aprendizad' +
+      'os-Geral\ProjetoHorse-React\backend'
+    Left = 128
+    Top = 56
+  end
+end

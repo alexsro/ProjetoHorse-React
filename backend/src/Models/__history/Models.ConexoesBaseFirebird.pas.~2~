@@ -1,0 +1,145 @@
+unit Models.FirebirdBaseConnections;
+
+interface
+
+uses
+  System.Generics.Collections, Models.FirebirdConnectionData,
+  System.SysUtils, Models.FirebirdConnection, System.StrUtils, FireDAC.Comp.Client;
+
+type
+  TConexoesBaseFirebird = class
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+    FDadosConexoes: TObjectDictionary<string, TDadosConexaoFirebird>;
+    FConexoes: TObjectDictionary<string, TConexaoFirebird>;
+    function DadosConexaoExiste(const Nome: string): boolean;
+    function ConexaoExiste(const Nome: string): boolean;
+  public
+    { public declarations }
+    constructor Create;
+    destructor Destroy; override;
+
+    function Add(const Nome, Servidor, Porta, BaseDados, Usuario, Senha: string;
+      CharSet: string = 'WIN1252'): TConexoesBaseFirebird;
+    function RemoverDadosConexao(const Nome: string): TConexoesBaseFirebird;
+    function GetDadosConexao(const Nome: string): TDadosConexaoFirebird;
+    function GetDadosConexoesDisponiveis: TArray<string>; overload;
+    function GetDadosConexoesDisponiveis(const Filtro: TFunc<string, boolean>): TArray<string>; overload;
+    function GetConexaoFiredac(const Nome: String; var Conexao: TFDConnection): TConexoesBaseFirebird;
+    procedure Clear;
+    function CountDadosConexao: integer;
+  end;
+
+implementation
+
+uses
+  Utils.Strings;
+
+{ TConexoesBaseFirebird }
+
+function TConexoesBaseFirebird.Add(const Nome, Servidor, Porta, BaseDados, Usuario, Senha: string; CharSet: string)
+  : TConexoesBaseFirebird;
+begin
+  Result := Self;
+  Self.RemoverDadosConexao(Nome);
+  FDadosConexoes.AddOrSetValue(TStringUtils.LowerCase(Nome), TDadosConexaoFirebird.Create(Servidor, Porta, BaseDados, Usuario, Senha, CharSet));
+  FConexoes.AddOrSetValue(TStringUtils.LowerCase(Nome), TConexaoFirebird.Create(GetDadosConexao(Nome)));
+end;
+
+procedure TConexoesBaseFirebird.Clear;
+begin
+  FDadosConexoes.Clear;
+end;
+
+function TConexoesBaseFirebird.DadosConexaoExiste(const Nome: string): boolean;
+begin
+  Result := false;
+  if not FDadosConexoes.ContainsKey(TStringUtils.LowerCase(Nome)) then
+    raise Exception.Create('Dados da conexão "' + Nome +  '" não encontrados.');
+  Result := true;
+end;
+
+function TConexoesBaseFirebird.ConexaoExiste(const Nome: string): boolean;
+begin
+  Result := false;
+  if not FConexoes.ContainsKey(TStringUtils.LowerCase(Nome)) then
+  begin
+    if self.DadosConexaoExiste(Nome) then
+    begin
+      Result := true;
+      FConexoes.AddOrSetValue(TStringUtils.LowerCase(Nome), TConexaoFirebird.Create(GetDadosConexao(Nome)));
+    end;
+  end
+  else
+    Result := true;
+end;
+
+function TConexoesBaseFirebird.CountDadosConexao: integer;
+begin
+  Result := FDadosConexoes.Count;
+end;
+
+constructor TConexoesBaseFirebird.Create;
+begin
+  FDadosConexoes := TObjectDictionary<string, TDadosConexaoFirebird>.Create([doOwnsValues]);
+  FConexoes := TObjectDictionary<string, TConexaoFirebird>.Create([doOwnsValues]);
+end;
+
+destructor TConexoesBaseFirebird.Destroy;
+begin
+  if Assigned(FDadosConexoes) then
+    FDadosConexoes.Free;
+  if Assigned(FConexoes) then
+    FConexoes.Free;
+  inherited;
+end;
+
+function TConexoesBaseFirebird.GetDadosConexao(const Nome: string): TDadosConexaoFirebird;
+begin
+  Result := nil;
+  Self.DadosConexaoExiste(Nome);
+  Result := FDadosConexoes.Items[TStringUtils.LowerCase(Nome)];
+end;
+
+function TConexoesBaseFirebird.GetDadosConexoesDisponiveis: TArray<string>;
+begin
+  Result := FDadosConexoes.Keys.ToArray;
+end;
+
+function TConexoesBaseFirebird.GetDadosConexoesDisponiveis(const Filtro: TFunc<string, boolean>): TArray<string>;
+var
+ Conexao: string;
+begin
+  if not Assigned(Filtro) then
+  begin
+    Result := Self.GetDadosConexoesDisponiveis;
+    exit;
+  end;
+
+  SetLength(Result, 0);
+  for Conexao in Self.GetDadosConexoesDisponiveis do
+  begin
+     if Filtro(Conexao) then
+     begin
+        SetLength(Result, Length(Result)+1);
+        Result[High(Result)] := Conexao;
+     end;
+  end;
+end;
+
+function TConexoesBaseFirebird.RemoverDadosConexao(const Nome: string): TConexoesBaseFirebird;
+begin
+  Result := Self;
+  if FDadosConexoes.ContainsKey(TStringUtils.LowerCase(Nome)) then
+    FDadosConexoes.Remove(Nome);
+end;
+
+function TConexoesBaseFirebird.GetConexaoFiredac(const Nome: String; var Conexao: TFDConnection): TConexoesBaseFirebird;
+begin
+  if Self.ConexaoExiste(Nome) then
+    Conexao := FConexoes.Items[TStringUtils.LowerCase(Nome)].Conexao;
+end;
+
+end.

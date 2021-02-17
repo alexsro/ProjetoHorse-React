@@ -1,0 +1,15 @@
+unit Enum.Mensagem.Tipo;
+
+interface
+
+Type
+  {$SCOPEDENUMS ON}
+  TTipoMensagem = (Nenhum, SimNao, Ok);
+  {$SCOPEDENUMS OFF}
+
+const
+  tipoMensagemTexto: array [TTipoMensagem] of string = ('Nenhuma mensagem', 'Mensagem Sim/Não', 'Mensagem Ok');
+
+implementation
+
+end.

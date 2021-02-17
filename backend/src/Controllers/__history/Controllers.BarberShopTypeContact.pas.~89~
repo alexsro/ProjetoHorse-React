@@ -1,0 +1,124 @@
+unit Controllers.BarberShopTypeContact;
+
+interface
+
+uses Horse, System.JSON, Interfaces.Controllers, System.Generics.Collections, REST.JSON, System.SysUtils,
+  Horse.GBSwagger, System.Variants, GBSwagger.Path.Attributes, JSONResponseManager, Services.BarberShopTypeContact,
+  Models.BarberShopTypeContact, Horse.JWT;
+
+Type
+  [SwagPath('tipocontatobarbearia', 'Tipos de contato de barbearias')]
+
+  TControllersBarberShopTypeContact = class (TInterfacedObject, IControllers)
+  private
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+  public
+    [SwagGET('Listar tipos de contato')]
+    [SwagResponse(200, TBarberShopTypeContact, 'Tipos de contato', True)]
+    procedure Index;
+    [SwagGET('{codigo}', 'Listar tipo de contato')]
+    [SwagParamPath('codigo', 'Código do tipo de contato')]
+    [SwagResponse(200, TBarberShopTypeContact, 'Tipos de contato', True)]
+    procedure IndexById;
+    [SwagPOST('Inserir tipos de contato')]
+    [SwagParamBody('TipoContato', TBarberShopTypeContact)]
+    [SwagResponse(201, TBarberShopTypeContact)]
+    [SwagResponse(400)]
+    procedure Insert;
+    [SwagPUT('{codigo}','Alterar tipo de contato')]
+    [SwagParamPath('codigo','Código do tipo de contato')]
+    [SwagParamBody('TipoContato', TBarberShopTypeContact)]
+    [SwagResponse(200)]
+    [SwagResponse(400)]
+    [SwagResponse(404)]
+    procedure Update;
+    [SwagDELETE('{codigo}', 'Deletar tipo de contato')]
+    [SwagParamPath('codigo', 'Código do tipo de contato')]
+    [SwagResponse(204)]
+    [SwagResponse(400)]
+    [SwagResponse(404)]
+    procedure Delete;
+  public
+    constructor Create(Req: THorseRequest; Res: THorseResponse);
+  end;
+
+implementation
+
+{ TControllersBarberShopTypeContact }
+
+constructor TControllersBarberShopTypeContact.Create(Req: THorseRequest; Res: THorseResponse);
+begin
+  FRequest := Req;
+  FResponse := Res;
+end;
+
+procedure TControllersBarberShopTypeContact.Index();
+var
+  ServiceBarberShopTypeContact: TServicesBarberShopTypeContact;
+begin
+  HorseJWT('TokenJWT')
+  ServiceBarberShopTypeContact := TServicesBarberShopTypeContact.Create(FRequest, FResponse, 'ProjetoHorseReact');
+  try
+    TJSONResponseManager.New(FRequest, FResponse)
+      .SetRecords(ServiceBarberShopTypeContact.GetRecordsTypesOfBarbershops)
+      .SetData(ServiceBarberShopTypeContact.GetTypesOfBarbershops, TJSONType.JSONArray).Send;
+  finally
+    ServiceBarberShopTypeContact.Free;
+  end;
+end;
+
+procedure TControllersBarberShopTypeContact.IndexById;
+var
+  ServiceBarberShopTypeContact: TServicesBarberShopTypeContact;
+begin
+  ServiceBarberShopTypeContact := TServicesBarberShopTypeContact.Create(FRequest, FResponse, 'ProjetoHorseReact');
+  try
+    TJSONResponseManager.New(FRequest, FResponse)
+      .SetRecords(ServiceBarberShopTypeContact.GetRecordsTypesOfBarbershops)
+      .SetData(ServiceBarberShopTypeContact.GetTypesOfBarbershops, TJSONType.JSONArray).Send;
+  finally
+    ServiceBarberShopTypeContact.Free;
+  end;
+end;
+
+procedure TControllersBarberShopTypeContact.Insert;
+var
+  ServiceBarberShopTypeContact: TServicesBarberShopTypeContact;
+begin
+  ServiceBarberShopTypeContact := TServicesBarberShopTypeContact.Create(FRequest, FResponse, 'ProjetoHorseReact');
+  try
+    TJSONResponseManager.New(FRequest, FResponse)
+      .SetData(ServiceBarberShopTypeContact.SetTypesOfBarbershops, TJSONType.JSONArray).Send;
+  finally
+    ServiceBarberShopTypeContact.Free;
+  end;
+end;
+
+procedure TControllersBarberShopTypeContact.Update;
+var
+  ServiceBarberShopTypeContact: TServicesBarberShopTypeContact;
+begin
+  ServiceBarberShopTypeContact := TServicesBarberShopTypeContact.Create(FRequest, FResponse, 'ProjetoHorseReact');
+  try
+    TJSONResponseManager.New(FRequest, FResponse)
+      .SetData(ServiceBarberShopTypeContact.UpdateTypesOfBarbershops, TJSONType.JSONArray).Send;
+  finally
+    ServiceBarberShopTypeContact.Free;
+  end;
+end;
+
+procedure TControllersBarberShopTypeContact.Delete;
+var
+  ServiceBarberShopTypeContact: TServicesBarberShopTypeContact;
+begin
+  ServiceBarberShopTypeContact := TServicesBarberShopTypeContact.Create(FRequest, FResponse, 'ProjetoHorseReact');
+  try
+    ServiceBarberShopTypeContact.DeleteTypesOfBarbershops;
+  finally
+    ServiceBarberShopTypeContact.Free;
+  end;
+
+end;
+
+end.

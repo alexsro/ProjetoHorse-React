@@ -1,0 +1,139 @@
+unit Cavalin;
+
+interface
+
+uses
+  Horse, System.SysUtils, System.Generics.Collections,
+  Models.ConexoesBaseFirebird, System.StrUtils, System.Hash;
+
+type
+  TCavalin = class
+  private
+    { private declarations }
+  protected
+    { protected declarations }
+    class var FConexoesBaseFirebird: TConexoesBaseFirebird;
+    class var FCavalinInstancia: TCavalin;
+    constructor Create; overload;
+    destructor Destroy; override;
+  public
+    { public declarations }
+    class property ConexoesBaseFirebird: TConexoesBaseFirebird read FConexoesBaseFirebird;
+
+    class destructor UnInitialize;
+
+    class function AddRotas(const RegistrarRotas: TProc): TCavalin;
+    class function AddMiddlewares(const RegistrarMiddlewares: TProc): TCavalin;
+
+    class function GetPathServidor: string;
+    class function GetPathTemp: string;
+    class function GetNewTempFolder: string;
+    class function IsDebugging: boolean;
+
+    class function GetInstancia: TCavalin;
+    class procedure FreeInstancia;
+    class function LiberaDocumentacaoAPI:boolean;
+  end;
+
+implementation
+
+uses
+  System.IOUtils;
+
+{ TCavalin }
+
+class function TCavalin.AddMiddlewares(const RegistrarMiddlewares: TProc): TCavalin;
+begin
+  Result := TCavalin.GetInstancia;
+  if Assigned(RegistrarMiddlewares) then
+    RegistrarMiddlewares();
+end;
+
+class function TCavalin.AddRotas(const RegistrarRotas: TProc): TCavalin;
+begin
+  Result := TCavalin.GetInstancia;
+  if Assigned(RegistrarRotas) then
+    RegistrarRotas();
+end;
+
+constructor TCavalin.Create;
+begin
+  if FConexoesBaseFirebird = nil then
+    FConexoesBaseFirebird := TConexoesBaseFirebird.Create;
+end;
+
+destructor TCavalin.Destroy;
+begin
+  if Assigned(FConexoesBaseFirebird) then
+    FConexoesBaseFirebird.Free;
+  FConexoesBaseFirebird := nil;
+  inherited;
+end;
+
+class function TCavalin.GetInstancia: TCavalin;
+begin
+  if FCavalinInstancia = nil then
+    FCavalinInstancia := TCavalin.Create;
+  Result := FCavalinInstancia;
+end;
+
+class function TCavalin.GetNewTempFolder: string;
+begin
+  Result := IncludeTrailingPathDelimiter(
+    Self.GetPathTemp +
+    THashBobJenkins.GetHashString(FormatDateTime('YYYYMMDDHHNNSSZZZ', Now))
+    );
+  if not DirectoryExists(Result) then
+    ForceDirectories(Result);
+end;
+
+class function TCavalin.GetPathServidor: string;
+begin
+  Result := '';
+{$IFDEF MSWINDOWS}
+  Result := GetModuleName(HInstance).Replace('\\?\', '');
+  if not Trim(Result).IsEmpty then
+    Result := IncludeTrailingPathDelimiter(ExtractFilePath(Result));
+{$ELSE}
+  raise EHorseException.Create('Recuperação do caminho do servidor não definido para essa plataforma.');
+{$ENDIF}
+end;
+
+class function TCavalin.GetPathTemp: string;
+begin
+  Result := IncludeTrailingPathDelimiter(Self.GetPathServidor + 'temp');
+  if not DirectoryExists(Result) then
+    ForceDirectories(Result);
+end;
+
+class function TCavalin.IsDebugging: boolean;
+begin
+{$IFDEF MSWINDOWS}
+{$WARNINGS Off}
+  Result := (DebugHook = 1);
+{$WARNINGS On}
+{$ELSE}
+  Result := false;
+  raise EHorseException.Create('Verificação de depuração não definida para essa plataforma.');
+{$ENDIF}
+end;
+
+class function TCavalin.LiberaDocumentacaoAPI: boolean;
+begin
+ result := IsDebugging;
+end;
+
+class destructor TCavalin.UnInitialize;
+begin
+  TCavalin.FreeInstancia;
+end;
+
+
+class procedure TCavalin.FreeInstancia;
+begin
+  if Assigned(FCavalinInstancia) then
+    FCavalinInstancia.Free;
+  FCavalinInstancia := nil;
+end;
+
+end.

@@ -1,0 +1,56 @@
+unit Models.ConexaoFirebird;
+
+interface
+
+uses
+  System.SysUtils, System.StrUtils, Models.DadosConexaoFirebird,
+  FireDAC.Comp.Client;
+
+type
+  TConexaoFirebird = class
+  strict private
+    FConexao: TFDConnection;
+    { private declarations }
+  protected
+    { protected declarations }
+  public
+    { public declarations }
+    constructor Create; overload;
+    constructor Create(DadosConexao: TDadosConexaoFirebird); overload;
+    destructor Destroy; override;
+    property Conexao: TFDConnection read FConexao;
+  end;
+
+implementation
+
+uses
+  Factorys.Connection;
+
+{ TConexaoFirebird }
+
+constructor TConexaoFirebird.Create;
+begin
+
+end;
+
+constructor TConexaoFirebird.Create(DadosConexao: TDadosConexaoFirebird);
+begin
+  FConexao := TFactoryConnection.GetInstance.CreateConnectionFirebird(false);
+  FConexao.Params.Values['DriverID'] := 'FB';
+  FConexao.Params.Values['Server'] := DadosConexao.Servidor;
+  FConexao.Params.Values['Port'] := DadosConexao.Porta;
+  FConexao.Params.Values['Database'] := DadosConexao.BaseDados;
+
+  FConexao.Params.Values['User_Name'] := DadosConexao.Usuario;
+  FConexao.Params.Values['Password'] := DadosConexao.Senha;
+  FConexao.Params.Values['CharacterSet'] := ifThen(not Trim(DadosConexao.CharSet).IsEmpty,
+    DadosConexao.CharSet, 'NONE');
+end;
+
+destructor TConexaoFirebird.Destroy;
+begin
+
+  inherited;
+end;
+
+end.

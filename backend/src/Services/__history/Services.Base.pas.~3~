@@ -1,0 +1,61 @@
+unit Services.Base;
+
+interface
+
+uses
+  Interfaces.Services, FireDAC.Comp.Client, Horse, Helpers.HorseRequest, System.Classes, System.SysUtils, Manager;
+
+Type
+  TServicesBase = class(TInterfacedObject, IServices)
+    private
+      FReq: THorseRequest;
+      FRes: THorseResponse;
+      FConnection: TFDConnection;
+    public
+      constructor Create(const ConnectionName: string; AOwner: TComponent = nil); reintroduce; overload;
+      constructor Create(const Req: THorseRequest; Res: THorseResponse; const ConnectionName: string; AOwner: TComponent = nil);
+        reintroduce; overload;
+      destructor Destroy; override;
+      procedure PageQuery(const Query: TFDQuery);
+      property Req : THorseRequest read FReq;
+      property Res : THorseResponse read FRes;
+  end;
+
+implementation
+
+{ TServicesBase }
+
+constructor TServicesBase.Create(const ConnectionName: string; AOwner: TComponent);
+begin
+  TManager.FirebirdBaseConnections.GetFiredacConnection(ConnectionName, FConnection);
+  FReq := nil;
+  FRes := nil;
+end;
+
+constructor TServicesBase.Create(const Req: THorseRequest; Res: THorseResponse; const ConnectionName: string;
+  AOwner: TComponent);
+begin
+  Self.Create(ConnectionName, AOwner);
+  FReq := Req;
+  FRes := Res;
+end;
+
+destructor TServicesBase.Destroy;
+begin
+  FReq := nil;
+  FRes := nil;
+  FreeAndNil(FConnection);
+  inherited;
+end;
+
+procedure TServicesBase.PageQuery(const Query: TFDQuery);
+begin
+  if FReq.IsPaged then
+  begin
+    Query.FetchOptions.RecsMax := StrToIntDef(FReq.GetLimit, 25);
+    Query.FetchOptions.RowsetSize := StrToIntDef(FReq.GetLimit, 25);
+    Query.FetchOptions.RecsSkip := StrToIntDef(FReq.GetSkip, 0);
+  end;
+end;
+
+end.

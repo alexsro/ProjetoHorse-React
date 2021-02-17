@@ -1,0 +1,32 @@
+unit Controllers.Users;
+
+interface
+
+uses Horse, System.JSON, Interfaces.Controllers, System.Generics.Collections, REST.JSON, System.SysUtils,
+  Horse.GBSwagger, System.Variants, GBSwagger.Path.Attributes, JSONResponseManager, Services.BarberShopTypeContact,
+  Models.BarberShopTypeContact;
+
+Type
+  [SwagPath('usuarios', 'Cadastro de usuários')]
+
+  TControllersUsers = class (TInterfaceTable, IControllers)
+  private
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+  public
+
+  public
+    constructor Create(Req: THorseRequest; Res: THorseResponse);
+  end;
+
+implementation
+
+{ TControllersUsers }
+
+constructor TControllersUsers.Create(Req: THorseRequest; Res: THorseResponse);
+begin
+  FRequest := Req;
+  FResponse := Res;
+end;
+
+end.
