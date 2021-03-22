@@ -1,2 +1,2 @@
 # ProjetoHorse
-Projeto em andamento com backend horse
+Projeto simples de cadastro com backend horse
