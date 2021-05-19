@@ -1,2 +1,2 @@
-# ProjetoHorse
-Projeto simples de cadastro com backend horse
+# Backend Horse
+Backend do projeto em Horse
